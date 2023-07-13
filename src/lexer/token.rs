@@ -1,23 +1,31 @@
-enum Token {
-    Comment(str),
-    Identifier(str),
+pub struct Token {
+    token: TokenType,
+    start: [u64; 2],
+    end: [u64; 2],
+}
+
+
+pub enum TokenType {
+    Comment(String),
+    Identifier(String),
     Keyword(Keyword),
     Compare(Compare),
     Operator(Operator),
     Value(Value),
     Symbol(Symbol),
     Braket(Braket),
-    Type(str),
+    Type(String),
 }
 
-enum Compare {
+pub enum Compare {
     GreaterEqual,
     LessEqual,
     Greater,
     Less,
+    Equal,
 }
 
-enum Operator {
+pub enum Operator {
     Plus,
     Minus,
     Mult,
@@ -31,7 +39,7 @@ enum Operator {
     PowerAssign,
 }
 
-enum Keyword {
+pub enum Keyword {
     Mut,
     For,
     Loop,
@@ -45,7 +53,7 @@ enum Keyword {
     Fn,
     Is,
     Enum,
-    Struct,
+    Stringuct,
     Impl,
     Interface,
     Debug,
@@ -55,22 +63,23 @@ enum Keyword {
     As,
 }
 
-enum Value {
+pub enum Value {
     Int(i64),
     Float(f64),
-    String(str),
-    Hex(str),
-    Oct(str),
-    Bin(str),
+    Stringing(String),
+    Hex(String),
+    Oct(String),
+    Bin(String),
     True,
     False,
     None,
+    Error,
 }
 
-enum Symbol {
+pub enum Symbol {
     Colon,
-    Error,
-    Optional,
+    Bang, // !
+    Optional, // ?
     Dot,
     Comma,
     Dereference, // "*Ident"
@@ -83,7 +92,7 @@ enum Symbol {
     Elipsis, // "..."
 }
 
-enum Braket {
+pub enum Braket {
     OpenBrace,
     CloseBrace,
     OpenBraket,
