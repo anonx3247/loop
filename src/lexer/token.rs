@@ -1,8 +1,9 @@
 pub struct Token {
-    token: TokenType,
-    start: [u64; 2],
-    end: [u64; 2],
+    pub token: TokenType,
+    pub range: Range,
 }
+
+pub type Range = [usize; 2];
 
 
 pub enum TokenType {
