@@ -73,6 +73,17 @@ pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
         Ok(sk) => sk,
         Err(e) => return Err(e),
     };
+
+    let mut symbols = match extract_symbols(&program, &skip) {
+        Ok(s) => s,
+        Err(e) => return Err(e)
+    };
+
+    tokens.append(&mut symbols);
+    skip = match skip_list(&tokens) {
+        Ok(sk) => sk,
+        Err(e) => return Err(e),
+    };
     return Ok(tokens)
 }
 fn extract_keywords(program: &String, skip: &SkipRange) -> Result<Vec<Token>, LexingError> {
@@ -99,6 +110,7 @@ fn extract_keywords(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Le
         "and",
         "or",
         "not",
+        "as",
     ];
 
     while cursor < program.len() {
@@ -129,6 +141,7 @@ fn extract_keywords(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Le
                 "and" => TokenType::Keyword(Keyword::And),
                 "or" => TokenType::Keyword(Keyword::Or),
                 "not" => TokenType::Keyword(Keyword::Not),
+                "as" => TokenType::Keyword(Keyword::As),
                 _ => return Err(LexingError::Unknown),
             },
             range: [keyword_start, keyword_start+keyword.len()],
@@ -140,6 +153,105 @@ fn extract_keywords(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Le
 
     return Ok(keywords)
 }
+
+fn extract_symbols(program: &String, skip: &SkipRange) -> Result<Vec<Token>, LexingError> {
+    let mut symbols: Vec<Token> = Vec::new();    
+    let mut cursor = 0;
+
+    let symbol_str = vec![
+        ":",
+        "!",
+        "?",
+        ".",
+        ",",
+        "&",
+        "*",
+        ":=",
+        "=",
+        "|",
+        "->",
+        "..",  
+        "...",
+        "{",
+        "}",
+        "[",
+        "]",
+        "(",
+        ")",
+        "+",
+        "-",
+        "*",
+        "/",
+        "^",
+        "%",
+        "+=",
+        "-=",
+        "*=",
+        "/=",
+        "^=",
+        ">=",
+        "<=",
+        ">",
+        "<",
+        "=="
+    ];
+
+    while cursor < program.len() {
+        let (symbol_start, symbol) = match next_of(&symbol_str, program, cursor, &skip) {
+            Ok(Some(i)) => i,
+            Err(e) => return Err(e),
+            Ok(None) => break,
+        };
+
+        symbols.push(Token{
+            token: match symbol.as_str() {
+                ":" =>    TokenType::Symbol(Symbol::Colon),
+                "!" =>    TokenType::Symbol(Symbol::Bang), 
+                "?" =>    TokenType::Symbol(Symbol::Optional), 
+                "." =>    TokenType::Symbol(Symbol::Dot),
+                "," =>    TokenType::Symbol(Symbol::Comma),
+                "&" =>    TokenType::Symbol(Symbol::Dereference), 
+                //"*" =>    TokenType::Symbol(Symbol::Address),     
+                ":=" =>    TokenType::Symbol(Symbol::Assign),
+                "=" =>    TokenType::Symbol(Symbol::Equal),
+                "|" =>    TokenType::Symbol(Symbol::TypeSum), 
+                "->" =>    TokenType::Symbol(Symbol::Arrow),
+                ".." =>      TokenType::Symbol(Symbol::Range),   
+                "..." =>    TokenType::Symbol(Symbol::Elipsis), 
+                "{" =>    TokenType::Braket(Braket::OpenBrace),
+                "}" =>    TokenType::Braket(Braket::CloseBrace),
+                "[" =>    TokenType::Braket(Braket::OpenBraket),
+                "]" =>    TokenType::Braket(Braket::CloseBraket),
+                "(" =>    TokenType::Braket(Braket::OpenParen),
+                ")" =>    TokenType::Braket(Braket::CloseParen),
+                "+" =>    TokenType::Operator(Operator::Plus),
+                "-" =>    TokenType::Operator(Operator::Minus),
+                //"*" =>    TokenType::Operator(Operator::Mult),
+                "/" =>    TokenType::Operator(Operator::Div),
+                "^" =>    TokenType::Operator(Operator::Power),
+                "%" =>    TokenType::Operator(Operator::Modulus),
+                "+=" =>    TokenType::Operator(Operator::PlusAssign),
+                "-=" =>    TokenType::Operator(Operator::MinusAssign),
+                "*=" =>    TokenType::Operator(Operator::MultAssign),
+                "/=" =>    TokenType::Operator(Operator::DivAssign),
+                "^=" =>    TokenType::Operator(Operator::PowerAssign),
+                ">=" =>    TokenType::Compare(Compare::GreaterEqual),
+                "<=" =>    TokenType::Compare(Compare::LessEqual),
+                ">" =>    TokenType::Compare(Compare::Greater),
+                "<" =>    TokenType::Compare(Compare::Less),
+                "==" =>   TokenType::Compare(Compare::Equal),
+                _ => return Err(LexingError::Unknown),
+            },
+            range: [symbol_start, symbol_start+symbol.len()],
+        });
+
+        cursor = inc_skip(symbol_start+symbol.len(), &&skip)
+       
+    }
+
+    return Ok(symbols)
+}
+
 fn extract_strings(program: &String, skip: &SkipRange) -> Result<Vec<Token>, LexingError> {
     let mut strings: Vec<Token> = Vec::new();    
     let mut cursor = 0;

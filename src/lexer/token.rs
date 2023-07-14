@@ -59,7 +59,6 @@ pub enum Keyword {
     Fn,
     Is,
     Enum,
-    Stringuct,
     Impl,
     Interface,
     Debug,
