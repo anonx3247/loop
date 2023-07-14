@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Token {
     pub token: TokenType,
     pub range: Range,
@@ -6,18 +7,20 @@ pub struct Token {
 pub type Range = [usize; 2];
 
 
+#[derive(Debug)]
 pub enum TokenType {
-    Comment(String),
-    Identifier(String),
+    Comment, // done
+    Identifier,
     Keyword(Keyword),
     Compare(Compare),
     Operator(Operator),
     Value(Value),
     Symbol(Symbol),
     Braket(Braket),
-    Type(String),
+    Type,
 }
 
+#[derive(Debug)]
 pub enum Compare {
     GreaterEqual,
     LessEqual,
@@ -26,6 +29,7 @@ pub enum Compare {
     Equal,
 }
 
+#[derive(Debug)]
 pub enum Operator {
     Plus,
     Minus,
@@ -40,6 +44,7 @@ pub enum Operator {
     PowerAssign,
 }
 
+#[derive(Debug)]
 pub enum Keyword {
     Mut,
     For,
@@ -64,19 +69,22 @@ pub enum Keyword {
     As,
 }
 
+#[derive(Debug)]
 pub enum Value {
-    Int(i64),
-    Float(f64),
-    Stringing(String),
-    Hex(String),
-    Oct(String),
-    Bin(String),
+    Int,
+    Float,
+    String,
+    Char,
+    Hex,
+    Oct,
+    Bin,
     True,
     False,
     None,
     Error,
 }
 
+#[derive(Debug)]
 pub enum Symbol {
     Colon,
     Bang, // !
@@ -93,6 +101,7 @@ pub enum Symbol {
     Elipsis, // "..."
 }
 
+#[derive(Debug)]
 pub enum Braket {
     OpenBrace,
     CloseBrace,
