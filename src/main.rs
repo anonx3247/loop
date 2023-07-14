@@ -7,10 +7,10 @@ fn main() {
 
     let tokens = match lexer::tokenize(program) {
         Ok(tok) => tok,
-        Err(e) => panic!("{:?}", e),
+        Err(e) => panic!("Got lexer error: {:?}", e),
     };
 
     for token in tokens {
-        println!("token");
+        println!("{:?}", token);
     }
 }

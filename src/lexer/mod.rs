@@ -20,10 +20,14 @@ pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
         Err(e) => return Err(e),
     };
 
+    println!("initialized...");
+
     let mut single_line_comments = match extract_single_line_comments(&program, &skip) {
         Ok(comm) => comm,
         Err(e) => return Err(e)
     };
+
+    println!("Extracted single_line_comments...");
 
     tokens.append(&mut single_line_comments);
     skip = match skip_list(&tokens) {
@@ -34,6 +38,8 @@ pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
         Ok(comm) => comm,
         Err(e) => return Err(e)
     };
+
+    println!("Extracted multi_line_comments...");
 
     tokens.append(&mut multi_line_comments);
     skip = match skip_list(&tokens) {
@@ -46,6 +52,8 @@ pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
         Err(e) => return Err(e)
     };
 
+    println!("Extracted strings...");
+
     tokens.append(&mut strings);
     skip = match skip_list(&tokens) {
         Ok(sk) => sk,
@@ -56,6 +64,8 @@ pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
         Ok(s) => s,
         Err(e) => return Err(e)
     };
+
+    println!("Extracted chars...");
 
     tokens.append(&mut chars);
     skip = match skip_list(&tokens) {
@@ -68,6 +78,8 @@ pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
         Err(e) => return Err(e)
     };
 
+    println!("Extracted keywords...");
+
     tokens.append(&mut keywords);
     skip = match skip_list(&tokens) {
         Ok(sk) => sk,
@@ -79,13 +91,16 @@ pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
         Err(e) => return Err(e)
     };
 
+    println!("Extracted symbols...");
+
     tokens.append(&mut symbols);
-    skip = match skip_list(&tokens) {
+    /*skip = match skip_list(&tokens) {
         Ok(sk) => sk,
         Err(e) => return Err(e),
-    };
+    };*/
     return Ok(tokens)
 }
+
 fn extract_keywords(program: &String, skip: &SkipRange) -> Result<Vec<Token>, LexingError> {
     let mut keywords: Vec<Token> = Vec::new();    
     let mut cursor = 0;
@@ -147,7 +162,7 @@ fn extract_keywords(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Le
             range: [keyword_start, keyword_start+keyword.len()],
         });
 
-        cursor = inc_skip(keyword_start+keyword.len(), &&skip)
+        cursor = inc_skip(keyword_start+keyword.len(), &skip)
        
     }
 
@@ -245,7 +260,7 @@ fn extract_symbols(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Lex
             range: [symbol_start, symbol_start+symbol.len()],
         });
 
-        cursor = inc_skip(symbol_start+symbol.len(), &&skip)
+        cursor = inc_skip(symbol_start+symbol.len(), &skip)
        
     }
 
@@ -275,7 +290,7 @@ fn extract_strings(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Lex
             };
 
             match program.get(str_end-1..str_end) {
-                Some("\\") => int_cursor = inc_skip(int_cursor, &&skip),
+                Some("\\") => int_cursor = inc_skip(int_cursor, &skip),
                 None => return Err(LexingError::EOF),
                 _ => unmatched = false,
             }
@@ -290,7 +305,7 @@ fn extract_strings(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Lex
         };
 
         strings.push(string);
-        cursor = inc_skip(str_end, &&skip)
+        cursor = inc_skip(str_end, &skip)
        
     }
 
@@ -320,7 +335,7 @@ fn extract_chars(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Lexin
             };
 
             match program.get(char_end-1..char_end) {
-                Some("\\") => int_cursor = inc_skip(int_cursor, &&skip),
+                Some("\\") => int_cursor = inc_skip(int_cursor, &skip),
                 None => return Err(LexingError::EOF),
                 _ => unmatched = false,
             }
@@ -335,7 +350,7 @@ fn extract_chars(program: &String, skip: &SkipRange) -> Result<Vec<Token>, Lexin
         };
 
         chars.push(char);
-        cursor = inc_skip(char_end, &&skip)
+        cursor = inc_skip(char_end, &skip)
        
     }
 
@@ -366,7 +381,7 @@ fn extract_multi_line_comments(program: &String, skip: &SkipRange) -> Result<Vec
         };
 
         comments.push(comment);
-        cursor = inc_skip(next_comment_end, &&skip);
+        cursor = inc_skip(next_comment_end, &skip);
         
     }
     return Ok(comments)
@@ -397,7 +412,7 @@ fn extract_single_line_comments(program: &String, skip: &SkipRange) -> Result<Ve
         };
 
         comments.push(comment);
-        cursor = inc_skip(newline, &&skip);
+        cursor = inc_skip(newline, &skip);
         
     }
     return Ok(comments)
@@ -414,22 +429,21 @@ fn next(seq: &str, program: &String, start: usize, skip: &SkipRange) -> Result<O
                 None => return Err(LexingError::EOF),
             }
         } else {
-            match program.get(cursor..cursor+seq.len()) {
+            match program.get(cursor-1..cursor+seq.len()) {
                 Some(s) => if seq == s {return Ok(Some(cursor))} else {found_start = false},
                 None => return Err(LexingError::EOF),
             }
         }
-        cursor = inc_skip(cursor, &&skip);
+        cursor = inc_skip(cursor, &skip);
     }
 
-    return Err(LexingError::EOF)
+    return Ok(None)
 }
 
 fn next_word_of(words: &Vec<&str>, program: &String, start: usize, skip: &SkipRange) -> Result<Option<(usize, String)>, LexingError> {
     let mut cursor = start;
-    let length = program.len();
 
-    while cursor < length {
+    while cursor < program.len() {
         let (next, word) = match next_of(words, program, cursor, &skip) {
             Ok(Some(a)) => a,
             Err(e) => return Err(e),
@@ -439,7 +453,7 @@ fn next_word_of(words: &Vec<&str>, program: &String, start: usize, skip: &SkipRa
         if is_whitespace_at(next-1, &program)  && is_whitespace_at(next+word.len(), &program) {
             return Ok(Some((next, word)))
         } else {
-            cursor = inc_skip(next+word.len(), &&skip);
+            cursor = inc_skip(next+word.len(), &skip);
         }
     }
     return Ok(None)
@@ -467,19 +481,21 @@ fn next_of(sequences: &Vec<&str>, program: &String, start: usize, skip: &SkipRan
                 None => return Err(LexingError::EOF),
             }
         } else {
-            match program.get(cursor..cursor+max_size) {
-                Some(s) => {
-                    for seq in sequences {
+
+            for seq in sequences {
+                match program.get(cursor..cursor+seq.len()+1) {
+                    Some(s) => {
                         if *seq == &s[0..seq.len()] {
                             return Ok(Some((cursor, String::from(*seq))));
                         }
-                    }
-                    found_start = false;
-                },
-                None => return Err(LexingError::EOF),
+                        found_start = false;
+                    },
+                    None => break,
+                }
             }
+           
         }
-        cursor = inc_skip(cursor, &&skip);
+        cursor = inc_skip(cursor, &skip);
     }
 
     return Ok(None)
@@ -506,7 +522,7 @@ fn next_not_of(sequences: &Vec<&str>, program: &String, start: usize, skip: &Ski
                 None => return Err(LexingError::EOF),
             }
         } else {
-            match program.get(cursor..cursor+max_size) {
+            match program.get(cursor..cursor+max_size+1) {
                 Some(s) => {
                     let mut found_seq = false;
                     for seq in sequences {
@@ -524,7 +540,7 @@ fn next_not_of(sequences: &Vec<&str>, program: &String, start: usize, skip: &Ski
                 None => return Err(LexingError::EOF),
             }
         }
-        cursor = inc_skip(cursor, &&skip);
+        cursor = inc_skip(cursor, &skip);
     }
 
     return Ok(None)
@@ -535,16 +551,20 @@ fn inc_skip(num: usize, skip: &SkipRange) -> usize {
     let mut cursor = num;
     for r in skip {
         if cursor >= r[0] && cursor <= r[1] {
-            cursor = r[1]+1
+            cursor = r[1]
         }
     }
-    return cursor
+    return cursor+1
 }
 
 // creates a sequence of ranges for lexers to skip
 fn skip_list(tokens: &Vec<Token>) -> Result<SkipRange, LexingError> {
     let mut indices: Vec<usize> = Vec::new();
-    let mut skip: Vec<Range> = Vec::new();
+    let mut skip: SkipRange = Vec::new();
+
+    if tokens.is_empty() {
+        return Ok(skip);
+    }
 
     for token in tokens {
         indices.push(token.range[0]);
@@ -580,6 +600,15 @@ fn max(list: &Vec<usize>) -> usize {
         }
     }
     return maximum
+}
+fn min(list: &Vec<usize>) -> usize {
+    let mut minimum = list[0];
+    for elem in list {
+        if *elem < minimum {
+            minimum = *elem
+        }
+    }
+    return minimum
 }
 
 fn is_whitespace_at(loc: usize, program: &String) -> bool {
