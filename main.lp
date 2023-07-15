@@ -2,10 +2,10 @@ mod example
 
 import csv
 
-x := 3  -- testing comments
-mut y := 5 
+x = 3  -- testing comments
+mut y = 5 
 
-phrase := "Hello, World!"
+phrase = "Hello, World!"
 
 println(phrase) 
 
@@ -15,7 +15,7 @@ struct Person {
   job: str? 
 }
 
-bob := Person(name: "Bob", age: 22)
+bob = Person(name: "Bob", age: 22)
 
 fn greet(p: Person) -> none { 
   print(
@@ -26,7 +26,6 @@ fn greet(p: Person) -> none {
     }
   )
 }
-
 
 bob.greet() 
 
@@ -62,26 +61,26 @@ fn is_prime(n: u64) -> bool {
   ret true
 }
 
-first_primes := [u64(i) for i in 1..100 if is_prime(i)] 
+first_primes = [u64(i) for i in 1..100 if is_prime(i)] 
 
 fn stats(vals: []u64) -> f64, f64, f64 { 
-  mut min, max := vals[0], vals[0] 
+  mut min, max = vals[0], vals[0] 
   for elem in vals {
     if elem > max {
-      max := elem
+      max = elem
     }
     if elem < min {
-      min := elem
+      min = elem
     }
   }
 
-  mean := sum(vals) / len(vals)
+  mean = sum(vals) / len(vals)
 
   ret min, max, mean 
 }
 
 fn sum (list: []T) -> T { 
-  mut s := 0
+  mut s = 0
   for i in list {
     s += i
   }
@@ -100,15 +99,15 @@ fn add(a: T, b: T) -> T {
 fn calc_n_primes(n: u64) -> []u64 {
   mut primes: u64 = [2] 
 
-  mut i := 2
-  debug t := time.now()
+  mut i = 2
+  debug t = time.now()
   while len(primes) < n {
     i += 1
     if is_prime(i) {
       primes += [i]
     }
   }
-  debug t2 := time.now()
+  debug t2 = time.now()
   debug println("For {n}, took {t2-t1}")
 }
 
@@ -116,7 +115,7 @@ fn calc_n_primes(n: u64) -> []u64 {
 
 
 fn retrieve_file() -> File? {
-  f := open("~/Documents/test.txt") 
+  f = open("~/Documents/test.txt") 
 
   if f is err {
     println("Error: {f}")
@@ -129,8 +128,8 @@ fn retrieve_file() -> File? {
 
 
 fn open_csv(path: str) -> csv::Reader! { 
-  f := open(path)! 
-  r := csv.reader(from: f) catch ex { 
+  f = open(path)! 
+  r = csv.reader(from: f) catch ex { 
     println("Unable to cread as csv: {ex}")
     ret ex
   }

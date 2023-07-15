@@ -66,6 +66,8 @@ pub enum Keyword {
     Or,
     Not,
     As,
+    Mod,
+    Import,
 }
 
 #[derive(Debug)]
@@ -93,7 +95,6 @@ pub enum Symbol {
     Dereference, // "*Ident"
     Address,     // "&Ident"
     Assign,
-    Equal,
     TypeSum, // "|"
     Arrow,
     Range,   // ".."
@@ -108,4 +109,14 @@ pub enum Braket {
     CloseBraket,
     OpenParen,
     CloseParen,
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(f, "{:?} : {:?}", self.token, self.range)
+    }
 }
