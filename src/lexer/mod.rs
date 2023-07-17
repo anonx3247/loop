@@ -38,6 +38,7 @@ pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
         symbol_tokens,
         equal_and_assign_tokens,
         multiplication_and_deref_tokens,
+        colon_and_double_tokens,
     ];
 
     for lx in lexers {
@@ -119,7 +120,38 @@ fn value_tokens(program: &String, skip: &SkipRange) -> Vec<Token> {
     }
 
     return values
-}fn multiplication_and_deref_tokens(program: &String, skip: &SkipRange) -> Vec<Token> {
+}
+
+fn colon_and_double_tokens(program: &String, skip: &SkipRange) -> Vec<Token> {
+    let mut colons: Vec<Token> = Vec::new();
+    let double_colon = Regex::new(r"::").unwrap();
+
+    for capture in double_colon.find_iter(program) {
+        if !range_intersects_skip(range_from_match(capture), skip) {
+            colons.push(Token{
+                token: TokenType::Symbol(Symbol::DoubleColon),
+                range: range_from_match(capture),
+            });
+        }
+    }
+    
+    let single_colon = Regex::new(r"[^:]:[^:]").unwrap();
+
+    for capture in single_colon.find_iter(program) {
+        let mut rg = range_from_match(capture);
+        rg[1] -= 1; // we don't want the matched "[^:]" character
+        rg[0] += 1; // we don't want the matched "[^:]" character
+        if !range_intersects_skip(rg, skip) {
+            colons.push(Token{
+                token: TokenType::Symbol(Symbol::Colon),
+                range: rg,
+            });
+        }
+    }
+    return colons
+}
+
+fn multiplication_and_deref_tokens(program: &String, skip: &SkipRange) -> Vec<Token> {
     let mut deref_and_mult: Vec<Token> = Vec::new();
     let deref = Regex::new(r"\*(\w|\*)").unwrap();
 
@@ -181,14 +213,13 @@ fn equal_and_assign_tokens(program: &String, skip: &SkipRange) -> Vec<Token> {
 fn symbol_tokens(program: &String, skip: &SkipRange) -> Vec<Token> {
     let mut symbols: Vec<Token> = Vec::new();    
 
-    let re = Regex::new(r"(:|!|\?|\.|&|\||->|\.\.|\.\.\.|\{|\}|\[|\]|\(|\)|\+|-|/|\^|%|\+=|-=|\*=|/=|\^=|>=|<=|>|<)").unwrap();
+    let re = Regex::new(r"(!|\?|\.|&|\||->|\.\.|\.\.\.|\{|\}|\[|\]|\(|\)|\+|-|/|\^|%|\+=|-=|\*=|/=|\^=|>=|<=|>|<)").unwrap();
 
 
     for capture in re.find_iter(program) {
         if !range_intersects_skip(range_from_match(capture), skip) {
             symbols.push(Token{
                 token: match capture.as_str() {
-                    ":" =>    TokenType::Symbol(Symbol::Colon),
                     "!" =>    TokenType::Symbol(Symbol::Bang), 
                     "?" =>    TokenType::Symbol(Symbol::Optional), 
                     "." =>    TokenType::Symbol(Symbol::Dot),

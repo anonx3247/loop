@@ -88,6 +88,7 @@ pub enum Value {
 #[derive(Debug)]
 pub enum Symbol {
     Colon,
+    DoubleColon,
     Bang, // !
     Optional, // ?
     Dot,
