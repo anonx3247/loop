@@ -11,7 +11,14 @@ fn main() {
         Err(e) => panic!("Got lexer error: {:?}", e),
     };
 
-    for token in tokens {
-        println!("{}", token);
+    for i in 0..tokens.len() {
+        //println!("{}: {}", i, tokens[i]);
     }
+
+    let tree = match parser::init_tree(&tokens) {
+        Ok(tr) => tr,
+        Err(e) => panic!("{:?}", e),
+    };
+
+    parser::print_constructions(tree, 0);
 }

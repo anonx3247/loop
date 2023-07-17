@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Token {
     pub token: TokenType,
     pub range: Range,
@@ -6,8 +6,7 @@ pub struct Token {
 
 pub type Range = [usize; 2];
 
-
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TokenType {
     Comment, // done
     Identifier,
@@ -20,7 +19,7 @@ pub enum TokenType {
     Type,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Compare {
     GreaterEqual,
     LessEqual,
@@ -29,7 +28,7 @@ pub enum Compare {
     Equal,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Operator {
     Plus,
     Minus,
@@ -44,7 +43,7 @@ pub enum Operator {
     PowerAssign,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Keyword {
     Mut,
     For,
@@ -70,7 +69,7 @@ pub enum Keyword {
     Import,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Value {
     Int,
     Float,
@@ -85,11 +84,11 @@ pub enum Value {
     Error,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Symbol {
     Colon,
     DoubleColon,
-    Bang, // !
+    Bang,     // !
     Optional, // ?
     Dot,
     Comma,
@@ -102,7 +101,7 @@ pub enum Symbol {
     Elipsis, // "..."
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Braket {
     OpenBrace,
     CloseBrace,

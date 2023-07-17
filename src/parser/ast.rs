@@ -1,59 +1,78 @@
 use crate::lexer::token::Token;
 
-enum Node {
-    Expression(Expression),
-    Statement(Statement),
-    Construction(Construction)
+#[derive(Debug)]
+pub enum NodeKind {
+    Expression,
+    Statement,
+    Construction(ConstructionKind),
 }
 
-struct ProgramFile {
-    imports: Vec<ImportStatement>,
-    mods: Vec<ModStatement>,
-    body: Vec<Statement>
+#[derive(Debug)]
+pub enum ConstructionKind {
+    Brace,
+    Braket,
+    Paren,
+    Token,
 }
 
-struct BinaryOperator {
-    op: BinaryOperatorKind,
-    left: Box<Expression>,
-    right: Box<Expression>,
+#[derive(Debug)]
+pub struct ProgramFile {
+    pub imports: Vec<ImportStatement>,
+    pub mods: Vec<ModStatement>,
+    pub body: Vec<Statement>,
 }
 
-struct UnaryOperator {
-    op: BinaryOperatorKind,
-    right: Box<Expression>,
+#[derive(Debug)]
+pub struct BinaryOperator {
+    pub op: BinaryOperatorKind,
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
 }
 
-struct Debug {
-    child: Box<Statement>,
+#[derive(Debug)]
+pub struct UnaryOperator {
+    pub op: BinaryOperatorKind,
+    pub right: Box<Expression>,
 }
 
-struct IfElseStatement {
-    if_branch: IfStatement,
-    elseif_branches: Vec<IfStatement>,
-    else_branch: Option<Block>,
+#[derive(Debug)]
+pub struct Debug {
+    pub child: Box<Statement>,
 }
 
-struct IfStatement {
-    condition: Expression,
-    body: Block,
+#[derive(Debug)]
+pub struct IfElseStatement {
+    pub if_branch: IfStatement,
+    pub elseif_branches: Vec<IfStatement>,
+    pub else_branch: Option<Block>,
 }
 
-struct Block {
-    contents: Vec<Node>,
+#[derive(Debug)]
+pub struct IfStatement {
+    pub condition: Expression,
+    pub body: Block,
 }
 
-struct IfElse {
-    if_branch: If,
-    elseif_branches: Vec<If>,
-    else_branch: Option<Box<Node>>,
+#[derive(Debug)]
+pub struct Block {
+    pub contents: Vec<Box<dyn Node>>,
 }
 
-struct If {
-    condition: Box<Expression>,
-    body: Block,
+#[derive(Debug)]
+pub struct IfElse {
+    pub if_branch: If,
+    pub elseif_branches: Vec<If>,
+    pub else_branch: Option<Box<dyn Node>>,
 }
 
-enum Expression {
+#[derive(Debug)]
+pub struct If {
+    pub condition: Box<Expression>,
+    pub body: Block,
+}
+
+#[derive(Debug)]
+pub enum Expression {
     BinaryOperator(BinaryOperator),
     UnaryOperator(UnaryOperator),
     Value(Value),
@@ -64,7 +83,8 @@ enum Expression {
 
 type ParenExpression = Box<Expression>;
 
-enum Statement {
+#[derive(Debug)]
+pub enum Statement {
     FnCall(FnCall),
     For(For),
     While(While),
@@ -83,14 +103,16 @@ enum Statement {
     Continue,
 }
 
-struct ImportStatement {
-    root: Object,
-    children: Vec<Object>,
+#[derive(Debug)]
+pub struct ImportStatement {
+    pub root: Object,
+    pub children: Vec<Object>,
 }
 
 type ModStatement = String;
 
-enum BinaryOperatorKind {
+#[derive(Debug)]
+pub enum BinaryOperatorKind {
     Sum,
     Multiplication,
     Subtraction,
@@ -105,18 +127,20 @@ enum BinaryOperatorKind {
     LessEqual,
 }
 
-enum UnaryOperatorKind {
+#[derive(Debug)]
+pub enum UnaryOperatorKind {
     Negative,
     Not,
 }
 
-
-struct Switch {
-    item: Value,
-    branches: Vec<SwitchBranch>,
-    default: Option<Block>,
+#[derive(Debug)]
+pub struct Switch {
+    pub item: Value,
+    pub branches: Vec<SwitchBranch>,
+    pub default: Option<Block>,
 }
-enum Value {
+#[derive(Debug)]
+pub enum Value {
     FnCall(FnCall),
     Object(Object),
     Literal(Literal),
@@ -129,29 +153,34 @@ type SwitchBranch = If;
 
 type Identifier = String;
 
-struct Object {
-    root: ObjectMember,
-    child: Option<Box<Object>>,
+#[derive(Debug)]
+pub struct Object {
+    pub root: ObjectMember,
+    pub child: Option<Box<Object>>,
 }
 
-enum ObjectMember {
+#[derive(Debug)]
+pub enum ObjectMember {
     Identifier(Identifier),
     FnCall(FnCall),
     Index(Index),
     Namespace(String),
 }
 
-enum Index {
+#[derive(Debug)]
+pub enum Index {
     Int(u64),
     Range,
 }
 
-struct Literal {
-    ttype: Type,
-    value: RealValue,
+#[derive(Debug)]
+pub struct Literal {
+    pub ttype: Type,
+    pub value: RealValue,
 }
 
-enum Type {
+#[derive(Debug)]
+pub enum Type {
     U8,
     U16,
     U32,
@@ -165,25 +194,29 @@ enum Type {
     UserType(String),
 }
 
-enum RealValue {
+#[derive(Debug)]
+pub enum RealValue {
     Number(Number),
     String(String),
     Byte(u8),
 }
-struct Assign {
-    mutable: bool,
-    variables: Tuple,
-    values: Tuple,
-    ttype: Option<Type>,
+#[derive(Debug)]
+pub struct Assign {
+    pub mutable: bool,
+    pub variables: Tuple,
+    pub values: Tuple,
+    pub ttype: Option<Type>,
 }
 
-struct Mutate {
-    kind: MutationKind,
-    variables: Tuple,
-    values: Tuple,
+#[derive(Debug)]
+pub struct Mutate {
+    pub kind: MutationKind,
+    pub variables: Tuple,
+    pub values: Tuple,
 }
 
-enum MutationKind {
+#[derive(Debug)]
+pub enum MutationKind {
     AssignAdd,
     AssignSubtract,
     AssignMultiply,
@@ -192,50 +225,58 @@ enum MutationKind {
     Assign,
 }
 
-struct FnCall {
-    identifier: String,
-    arguments: Vec<ArgValue>,
+#[derive(Debug)]
+pub struct FnCall {
+    pub identifier: String,
+    pub arguments: Vec<ArgValue>,
 }
 
 type StructInit = FnCall;
 
-struct Fn {
-    identifier: String,
-    arguments: Vec<Arg>,
-    return_types: Vec<Type>,
-    body: Block,
+#[derive(Debug)]
+pub struct Fn {
+    pub identifier: String,
+    pub arguments: Vec<Arg>,
+    pub return_types: Vec<Type>,
+    pub body: Block,
 }
 
-struct Arg {
-    name: String,
-    ttype: Type,
+#[derive(Debug)]
+pub struct Arg {
+    pub name: String,
+    pub ttype: Type,
 }
 
-struct ArgValue {
-    name: Option<String>,
-    value: Expression
+#[derive(Debug)]
+pub struct ArgValue {
+    pub name: Option<String>,
+    pub value: Expression,
 }
 
-struct For {
-    elem: Tuple,
-    iterator: Iterable,
-    body: Block,
+#[derive(Debug)]
+pub struct For {
+    pub elem: Tuple,
+    pub iterator: Iterable,
+    pub body: Block,
 }
 
 type Tuple = Vec<Value>;
 
-enum Iterable {
+#[derive(Debug)]
+pub enum Iterable {
     Range(Range),
     Object(Object),
 }
 
-struct Range {
-    start: Number,
-    end: Number,
-    step: Number,
+#[derive(Debug)]
+pub struct Range {
+    pub start: Number,
+    pub end: Number,
+    pub step: Number,
 }
 
-enum Number {
+#[derive(Debug)]
+pub enum Number {
     U8(u8),
     U16(u16),
     U32(u32),
@@ -246,37 +287,85 @@ enum Number {
     F64(f64),
 }
 
-struct While {
-    condition: Expression,
-    body: Block,
+#[derive(Debug)]
+pub struct While {
+    pub condition: Expression,
+    pub body: Block,
 }
 
-struct Loop {
-    body: Block,
+#[derive(Debug)]
+pub struct Loop {
+    pub body: Block,
 }
 
-struct Struct {
-    name: String,
-    members: Vec<Arg>,
+#[derive(Debug)]
+pub struct Struct {
+    pub name: String,
+    pub members: Vec<Arg>,
 }
 
-struct Enum {
-    name: String,
-    members: Vec<EnumMember>,
+#[derive(Debug)]
+pub struct Enum {
+    pub name: String,
+    pub members: Vec<EnumMember>,
 }
 
-struct EnumMember {
-    name: String,
-    ttype: Option<Type>,
+#[derive(Debug)]
+pub struct EnumMember {
+    pub name: String,
+    pub ttype: Option<Type>,
 }
 
-enum Construction {
+#[derive(Debug)]
+pub enum Construction {
     Brace(Brace),
     Paren(Paren),
     Braket(Braket),
     Token(Token),
 }
 
-type Brace = Vec<Node>;
+type Brace = Vec<Box<Construction>>;
 type Paren = Brace;
 type Braket = Paren;
+
+pub trait Node {
+    fn display(&self, offset: usize) -> String {
+        let mut spaces: Vec<String> = Vec::new();
+        for i in 0..offset {
+            spaces.push(String::from("    "));
+        }
+
+        let off = spaces.join("");
+        return String::from(format!("{} {:?}:", off, self.kind()));
+    }
+    fn kind(&self) -> NodeKind;
+}
+
+impl Node for Statement {
+    fn kind(&self) -> NodeKind {
+        NodeKind::Statement
+    }
+}
+
+impl std::fmt::Debug for dyn Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", &self.display(0))
+    }
+}
+
+impl Node for Expression {
+    fn kind(&self) -> NodeKind {
+        NodeKind::Expression
+    }
+}
+
+impl Node for Construction {
+    fn kind(&self) -> NodeKind {
+        match self {
+            Self::Brace(_) => NodeKind::Construction(ConstructionKind::Brace),
+            Self::Paren(_) => NodeKind::Construction(ConstructionKind::Paren),
+            Self::Braket(_) => NodeKind::Construction(ConstructionKind::Braket),
+            Self::Token(_) => NodeKind::Construction(ConstructionKind::Token),
+        }
+    }
+}

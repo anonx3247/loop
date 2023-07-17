@@ -1,1 +1,1 @@
-rust-analyzer rustc cargo
+rust-analyzer rustc cargo rustfmt
