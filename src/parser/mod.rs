@@ -33,7 +33,75 @@ pub fn parse(tokens: &Vec<token::Token>, program: &String) -> Result<Tree, Parsi
         Err(e) => return Err(e),
     };
 
+    tree = match parse_function_calls(&tree, program) {
+        Ok(t) => t,
+        Err(e) => return Err(e),
+    };
+
     return Ok(tree);
+}
+
+fn parse_function_calls(tree: &Tree, program: &String) -> Result<Tree, ParsingError> {
+    let mut i = 0;
+    let mut new_tree: Tree = Vec::new();
+
+    // to be defined
+    fn extract_args() {}
+
+    while i < tree.len() - 1 {
+        if let (
+            ast::Node::Construction(ast::Construction::Token(token::Token {
+                token: token::TokenType::Identifier,
+                range: r,
+            })),
+            ast::Node::Construction(ast::Construction::Paren(p)),
+        ) = (tree[i].as_ref(), tree[i + 1].as_ref())
+        {
+            let fun = ast::Node::Undetermined(ast::Undetermined::FnCall(ast::FnCall {
+                identifier: program[r[0]..r[1]].to_string(),
+                arguments: extract_args(p, program),
+            }));
+            i += 1
+        } else {
+            new_tree.push(match tree[i].as_ref() {
+                ast::Node::Scope(ast::Scope {
+                    identifiers: id,
+                    content: c,
+                }) => match parse_function_calls(c, program) {
+                    Ok(v) => Box::new(ast::Node::Scope(ast::Scope {
+                        identifiers: *id,
+                        content: v,
+                    })),
+                    Err(e) => return Err(e),
+                },
+
+                ast::Node::Construction(ast::Construction::Brace(k)) => {
+                    match parse_function_calls(k, program) {
+                        Ok(v) => Box::new(ast::Node::Construction(ast::Construction::Brace(v))),
+                        Err(e) => return Err(e),
+                    }
+                }
+                ast::Node::Construction(ast::Construction::Paren(k)) => {
+                    match parse_function_calls(k, program) {
+                        Ok(v) => Box::new(ast::Node::Construction(ast::Construction::Paren(v))),
+                        Err(e) => return Err(e),
+                    }
+                }
+                ast::Node::Construction(ast::Construction::SquareBraket(k)) => {
+                    match parse_function_calls(k, program) {
+                        Ok(v) => {
+                            Box::new(ast::Node::Construction(ast::Construction::SquareBraket(v)))
+                        }
+                        Err(e) => return Err(e),
+                    }
+                }
+                _s => Box::new(*_s),
+            });
+        }
+        i += 1
+    }
+
+    return Ok(new_tree);
 }
 
 fn generate_scopes(tree: &Tree, program: &String) -> Result<(Tree, ast::IdentMap), ParsingError> {

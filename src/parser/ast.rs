@@ -5,6 +5,7 @@ pub enum Node {
     Expression(Expression),
     Statement(Statement),
     Construction(Construction),
+    Undetermined(Undetermined),
     Scope(Scope),
 }
 
@@ -95,6 +96,14 @@ pub enum Statement {
     Break,
     Continue,
     Scope,
+}
+
+#[derive(Debug, Clone)]
+pub enum Undetermined {
+    FnCall(FnCall),
+    Fn(Fn),
+    IfElse(IfElse),
+    Switch(Switch),
 }
 
 #[derive(Debug, Clone)]
