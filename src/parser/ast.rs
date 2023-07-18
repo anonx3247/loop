@@ -1,77 +1,70 @@
 use crate::lexer::token::Token;
 
-#[derive(Debug)]
-pub enum NodeKind {
-    Expression,
-    Statement,
-    Construction(ConstructionKind),
+#[derive(Debug, Clone)]
+pub enum Node {
+    Expression(Expression),
+    Statement(Statement),
+    Construction(Construction),
+    Scope(Scope),
 }
 
-#[derive(Debug)]
-pub enum ConstructionKind {
-    Brace,
-    Braket,
-    Paren,
-    Token,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProgramFile {
     pub imports: Vec<ImportStatement>,
     pub mods: Vec<ModStatement>,
     pub body: Vec<Statement>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BinaryOperator {
     pub op: BinaryOperatorKind,
     pub left: Box<Expression>,
     pub right: Box<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UnaryOperator {
     pub op: BinaryOperatorKind,
     pub right: Box<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Debug {
     pub child: Box<Statement>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IfElseStatement {
     pub if_branch: IfStatement,
     pub elseif_branches: Vec<IfStatement>,
     pub else_branch: Option<Block>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IfStatement {
     pub condition: Expression,
     pub body: Block,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Block {
-    pub contents: Vec<Box<dyn Node>>,
+    pub contents: Vec<Box<Node>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IfElse {
     pub if_branch: If,
     pub elseif_branches: Vec<If>,
-    pub else_branch: Option<Box<dyn Node>>,
+    pub else_branch: Option<Box<Node>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct If {
     pub condition: Box<Expression>,
     pub body: Block,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     BinaryOperator(BinaryOperator),
     UnaryOperator(UnaryOperator),
@@ -83,7 +76,7 @@ pub enum Expression {
 
 type ParenExpression = Box<Expression>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     FnCall(FnCall),
     For(For),
@@ -101,9 +94,18 @@ pub enum Statement {
     ModStatement(ModStatement),
     Break,
     Continue,
+    Scope,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct Scope {
+    pub identifiers: IdentMap,
+    pub content: Vec<Box<Node>>,
+}
+
+pub type IdentMap = std::collections::HashMap<String, Option<Box<Node>>>;
+
+#[derive(Debug, Clone)]
 pub struct ImportStatement {
     pub root: Object,
     pub children: Vec<Object>,
@@ -111,7 +113,7 @@ pub struct ImportStatement {
 
 type ModStatement = String;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryOperatorKind {
     Sum,
     Multiplication,
@@ -127,19 +129,19 @@ pub enum BinaryOperatorKind {
     LessEqual,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UnaryOperatorKind {
     Negative,
     Not,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Switch {
     pub item: Value,
     pub branches: Vec<SwitchBranch>,
     pub default: Option<Block>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     FnCall(FnCall),
     Object(Object),
@@ -153,13 +155,13 @@ type SwitchBranch = If;
 
 type Identifier = String;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Object {
     pub root: ObjectMember,
     pub child: Option<Box<Object>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ObjectMember {
     Identifier(Identifier),
     FnCall(FnCall),
@@ -167,19 +169,19 @@ pub enum ObjectMember {
     Namespace(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Index {
     Int(u64),
     Range,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Literal {
     pub ttype: Type,
     pub value: RealValue,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     U8,
     U16,
@@ -192,15 +194,21 @@ pub enum Type {
     String,
     Byte,
     UserType(String),
+    Bool,
+    Error,
+    None,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum RealValue {
     Number(Number),
     String(String),
-    Byte(u8),
+    Bool(bool),
+    Byte(Vec<char>),
+    Error,
+    None,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Assign {
     pub mutable: bool,
     pub variables: Tuple,
@@ -208,14 +216,14 @@ pub struct Assign {
     pub ttype: Option<Type>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Mutate {
     pub kind: MutationKind,
     pub variables: Tuple,
     pub values: Tuple,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MutationKind {
     AssignAdd,
     AssignSubtract,
@@ -225,7 +233,7 @@ pub enum MutationKind {
     Assign,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FnCall {
     pub identifier: String,
     pub arguments: Vec<ArgValue>,
@@ -233,7 +241,7 @@ pub struct FnCall {
 
 type StructInit = FnCall;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Fn {
     pub identifier: String,
     pub arguments: Vec<Arg>,
@@ -241,19 +249,19 @@ pub struct Fn {
     pub body: Block,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Arg {
     pub name: String,
     pub ttype: Type,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArgValue {
     pub name: Option<String>,
     pub value: Expression,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct For {
     pub elem: Tuple,
     pub iterator: Iterable,
@@ -262,20 +270,20 @@ pub struct For {
 
 type Tuple = Vec<Value>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Iterable {
     Range(Range),
     Object(Object),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Range {
     pub start: Number,
     pub end: Number,
     pub step: Number,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Number {
     U8(u8),
     U16(u16),
@@ -287,85 +295,68 @@ pub enum Number {
     F64(f64),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct While {
     pub condition: Expression,
     pub body: Block,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Loop {
     pub body: Block,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Struct {
     pub name: String,
     pub members: Vec<Arg>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Enum {
     pub name: String,
     pub members: Vec<EnumMember>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnumMember {
     pub name: String,
     pub ttype: Option<Type>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Construction {
     Brace(Brace),
     Paren(Paren),
-    Braket(Braket),
+    SquareBraket(SquareBraket),
     Token(Token),
 }
 
-type Brace = Vec<Box<Construction>>;
+type Brace = Vec<Box<Node>>;
 type Paren = Brace;
-type Braket = Paren;
+type SquareBraket = Paren;
 
-pub trait Node {
-    fn display(&self, offset: usize) -> String {
+pub trait NodeDisplay {
+    fn display(&self, offset: usize) -> String;
+
+    fn offset(&self, offset: usize) -> String {
         let mut spaces: Vec<String> = Vec::new();
         for i in 0..offset {
             spaces.push(String::from("    "));
         }
 
-        let off = spaces.join("");
-        return String::from(format!("{} {:?}:", off, self.kind()));
-    }
-    fn kind(&self) -> NodeKind;
-}
-
-impl Node for Statement {
-    fn kind(&self) -> NodeKind {
-        NodeKind::Statement
+        spaces.join("")
     }
 }
 
-impl std::fmt::Debug for dyn Node {
+impl std::fmt::Debug for dyn NodeDisplay {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", &self.display(0))
     }
 }
 
-impl Node for Expression {
-    fn kind(&self) -> NodeKind {
-        NodeKind::Expression
-    }
-}
-
-impl Node for Construction {
-    fn kind(&self) -> NodeKind {
-        match self {
-            Self::Brace(_) => NodeKind::Construction(ConstructionKind::Brace),
-            Self::Paren(_) => NodeKind::Construction(ConstructionKind::Paren),
-            Self::Braket(_) => NodeKind::Construction(ConstructionKind::Braket),
-            Self::Token(_) => NodeKind::Construction(ConstructionKind::Token),
-        }
+impl NodeDisplay for Node {
+    fn display(&self, offset: usize) -> String {
+        return String::from(format!("{} {:?}:", self.offset(offset), self));
     }
 }

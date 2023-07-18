@@ -74,7 +74,7 @@ pub enum Value {
     Int,
     Float,
     String,
-    Char,
+    Byte,
     Hex,
     Oct,
     Bin,
@@ -105,8 +105,8 @@ pub enum Symbol {
 pub enum Braket {
     OpenBrace,
     CloseBrace,
-    OpenBraket,
-    CloseBraket,
+    OpenSquareBraket,
+    CloseSquareBraket,
     OpenParen,
     CloseParen,
 }

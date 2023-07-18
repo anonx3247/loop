@@ -6,7 +6,7 @@ use std::fs;
 fn main() {
     let program = fs::read_to_string("main.lp").expect("File wasn't found");
 
-    let tokens = match lexer::tokenize(program) {
+    let tokens = match lexer::tokenize(&program) {
         Ok(tok) => tok,
         Err(e) => panic!("Got lexer error: {:?}", e),
     };
@@ -15,10 +15,10 @@ fn main() {
         //println!("{}: {}", i, tokens[i]);
     }
 
-    let tree = match parser::init_tree(&tokens) {
+    let tree = match parser::parse(&tokens, &program) {
         Ok(tr) => tr,
         Err(e) => panic!("{:?}", e),
     };
 
-    parser::print_constructions(tree, 0);
+    parser::print_tree(tree, 0);
 }

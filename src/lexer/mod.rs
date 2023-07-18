@@ -10,7 +10,7 @@ pub enum LexingError {
 
 pub type SkipRange = Vec<Range>;
 
-pub fn tokenize(program: String) -> Result<Vec<Token>, LexingError> {
+pub fn tokenize(program: &String) -> Result<Vec<Token>, LexingError> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut skip: SkipRange = Vec::new();
 
@@ -233,8 +233,8 @@ fn symbol_tokens(program: &String, skip: &SkipRange) -> Vec<Token> {
                     "..." => TokenType::Symbol(Symbol::Elipsis),
                     "{" => TokenType::Braket(Braket::OpenBrace),
                     "}" => TokenType::Braket(Braket::CloseBrace),
-                    "[" => TokenType::Braket(Braket::OpenBraket),
-                    "]" => TokenType::Braket(Braket::CloseBraket),
+                    "[" => TokenType::Braket(Braket::OpenSquareBraket),
+                    "]" => TokenType::Braket(Braket::CloseSquareBraket),
                     "(" => TokenType::Braket(Braket::OpenParen),
                     ")" => TokenType::Braket(Braket::CloseParen),
                     "+" => TokenType::Operator(Operator::Plus),
@@ -377,7 +377,7 @@ fn char_tokens(program: &String, skip: &SkipRange) -> Vec<Token> {
     for capture in re.find_iter(program) {
         if !range_intersects_skip(range_from_match(capture), skip) {
             chars.push(Token {
-                token: TokenType::Value(Value::Char),
+                token: TokenType::Value(Value::Byte),
                 range: range_from_match(capture),
             });
         }
