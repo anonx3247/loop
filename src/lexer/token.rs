@@ -1,4 +1,4 @@
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Token {
     pub token: TokenType,
     pub range: Range,
@@ -112,6 +112,16 @@ pub enum Braket {
 }
 
 impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(f, "{:?} : {:?}", self.token, self.range)
+    }
+}
+
+impl std::fmt::Debug for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         // Write strictly the first element into the supplied output
         // stream: `f`. Returns `fmt::Result` which indicates whether the

@@ -6,7 +6,6 @@ pub enum Node {
     Statement(Statement),
     Construction(Construction),
     Undetermined(Undetermined),
-    Scope(Scope),
 }
 
 #[derive(Debug, Clone)]
@@ -95,7 +94,6 @@ pub enum Statement {
     ModStatement(ModStatement),
     Break,
     Continue,
-    Scope,
 }
 
 #[derive(Debug, Clone)]
@@ -104,12 +102,6 @@ pub enum Undetermined {
     Fn(Fn),
     IfElse(IfElse),
     Switch(Switch),
-}
-
-#[derive(Debug, Clone)]
-pub struct Scope {
-    pub identifiers: IdentMap,
-    pub content: Vec<Box<Node>>,
 }
 
 pub type IdentMap = std::collections::HashMap<String, Option<Box<Node>>>;
@@ -341,12 +333,19 @@ pub enum Construction {
     Token(Token),
 }
 
-type Brace = Vec<Box<Node>>;
-type Paren = Brace;
+#[derive(Clone)]
+pub struct Brace {
+    pub identifiers: Option<IdentMap>,
+    pub content: Vec<Box<Node>>,
+}
+
+type Paren = Vec<Box<Node>>;
 type SquareBraket = Paren;
 
-pub trait NodeDisplay {
-    fn display(&self, offset: usize) -> String;
+impl Node {
+    pub fn display(&self, offset: usize) -> String {
+        return String::from(format!("{} {:?}:", self.offset(offset), self));
+    }
 
     fn offset(&self, offset: usize) -> String {
         let mut spaces: Vec<String> = Vec::new();
@@ -358,14 +357,12 @@ pub trait NodeDisplay {
     }
 }
 
-impl std::fmt::Debug for dyn NodeDisplay {
+impl std::fmt::Debug for Brace {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", &self.display(0))
-    }
-}
-
-impl NodeDisplay for Node {
-    fn display(&self, offset: usize) -> String {
-        return String::from(format!("{} {:?}:", self.offset(offset), self));
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(f, "Brace: id=*, content:")
     }
 }

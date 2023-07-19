@@ -3,9 +3,9 @@ use std::collections::HashMap;
 
 use crate::lexer::token;
 
-use self::ast::{Construction, NodeDisplay};
+use ast::{Brace, Construction, Node};
 
-type Tree = Vec<Box<ast::Node>>;
+type Tree = Vec<Box<Node>>;
 
 #[derive(Debug)]
 pub enum ParsingError {
@@ -16,7 +16,7 @@ pub enum ParsingError {
 
 pub fn parse(tokens: &Vec<token::Token>, program: &String) -> Result<Tree, ParsingError> {
     let mut tree: Tree = match generate_braket_heirarchy(tokens) {
-        Ok(c) => c.iter().map(|k| k.clone() as Box<ast::Node>).collect(),
+        Ok(c) => c.iter().map(|k| k.clone() as Box<Node>).collect(),
         Err(e) => return Err(e),
     };
 
@@ -26,21 +26,24 @@ pub fn parse(tokens: &Vec<token::Token>, program: &String) -> Result<Tree, Parsi
     };
 
     tree = match generate_scopes(&tree, program) {
-        Ok((tr, id)) => vec![Box::new(ast::Node::Scope(ast::Scope {
+        Ok((tr, id)) => vec![Box::new(Node::Construction(Construction::Brace(Brace {
             identifiers: id,
             content: tr,
-        }))],
+        })))],
         Err(e) => return Err(e),
     };
 
+    /*
     tree = match parse_function_calls(&tree, program) {
         Ok(t) => t,
         Err(e) => return Err(e),
     };
+    */
 
     return Ok(tree);
 }
 
+/*
 fn parse_function_calls(tree: &Tree, program: &String) -> Result<Tree, ParsingError> {
     let mut i = 0;
     let mut new_tree: Tree = Vec::new();
@@ -50,48 +53,39 @@ fn parse_function_calls(tree: &Tree, program: &String) -> Result<Tree, ParsingEr
 
     while i < tree.len() - 1 {
         if let (
-            ast::Node::Construction(ast::Construction::Token(token::Token {
+            Node::Construction(Construction::Token(token::Token {
                 token: token::TokenType::Identifier,
                 range: r,
             })),
-            ast::Node::Construction(ast::Construction::Paren(p)),
+            Node::Construction(Construction::Paren(p)),
         ) = (tree[i].as_ref(), tree[i + 1].as_ref())
         {
-            let fun = ast::Node::Undetermined(ast::Undetermined::FnCall(ast::FnCall {
+            let fun = Node::Undetermined(ast::Undetermined::FnCall(ast::FnCall {
                 identifier: program[r[0]..r[1]].to_string(),
                 arguments: extract_args(p, program),
             }));
             i += 1
         } else {
             new_tree.push(match tree[i].as_ref() {
-                ast::Node::Scope(ast::Scope {
+                Node::Construction(Construction::Brace(Brace {
                     identifiers: id,
                     content: c,
-                }) => match parse_function_calls(c, program) {
-                    Ok(v) => Box::new(ast::Node::Scope(ast::Scope {
+                })) => match parse_function_calls(c, program) {
+                    Ok(v) => Box::new(Node::Construction(Construction::Brace(Brace {
                         identifiers: *id,
                         content: v,
-                    })),
+                    }))),
                     Err(e) => return Err(e),
                 },
-
-                ast::Node::Construction(ast::Construction::Brace(k)) => {
+                Node::Construction(Construction::Paren(k)) => {
                     match parse_function_calls(k, program) {
-                        Ok(v) => Box::new(ast::Node::Construction(ast::Construction::Brace(v))),
+                        Ok(v) => Box::new(Node::Construction(Construction::Paren(v))),
                         Err(e) => return Err(e),
                     }
                 }
-                ast::Node::Construction(ast::Construction::Paren(k)) => {
+                Node::Construction(Construction::SquareBraket(k)) => {
                     match parse_function_calls(k, program) {
-                        Ok(v) => Box::new(ast::Node::Construction(ast::Construction::Paren(v))),
-                        Err(e) => return Err(e),
-                    }
-                }
-                ast::Node::Construction(ast::Construction::SquareBraket(k)) => {
-                    match parse_function_calls(k, program) {
-                        Ok(v) => {
-                            Box::new(ast::Node::Construction(ast::Construction::SquareBraket(v)))
-                        }
+                        Ok(v) => Box::new(Node::Construction(Construction::SquareBraket(v))),
                         Err(e) => return Err(e),
                     }
                 }
@@ -103,23 +97,25 @@ fn parse_function_calls(tree: &Tree, program: &String) -> Result<Tree, ParsingEr
 
     return Ok(new_tree);
 }
+    */
 
-fn generate_scopes(tree: &Tree, program: &String) -> Result<(Tree, ast::IdentMap), ParsingError> {
+fn generate_scopes(
+    tree: &Tree,
+    program: &String,
+) -> Result<(Tree, Option<ast::IdentMap>), ParsingError> {
     let mut new_tree: Tree = Vec::new();
     let mut idents: ast::IdentMap = HashMap::new();
     for node in tree {
-        if let ast::Node::Construction(Construction::Brace(t)) = node.as_ref() {
-            new_tree.push(match generate_scopes(t, &program) {
-                Ok((tr, id)) => Box::new(ast::Node::Scope(ast::Scope {
+        if let Node::Construction(Construction::Brace(t)) = node.as_ref() {
+            new_tree.push(match generate_scopes(&t.content, &program) {
+                Ok((tr, id)) => Box::new(Node::Construction(Construction::Brace(Brace {
                     identifiers: id,
                     content: tr,
-                })),
+                }))),
                 Err(e) => return Err(e),
             })
-        } else if let ast::Node::Construction(ast::Construction::Token(token::Token {
-            token: t,
-            range: r,
-        })) = node.as_ref()
+        } else if let Node::Construction(Construction::Token(token::Token { token: t, range: r })) =
+            node.as_ref()
         {
             if let token::TokenType::Identifier = t {
                 idents.insert(program[r[0]..r[1]].to_string(), Some(node.clone()));
@@ -130,7 +126,7 @@ fn generate_scopes(tree: &Tree, program: &String) -> Result<(Tree, ast::IdentMap
         }
     }
 
-    return Ok((new_tree, idents));
+    return Ok((new_tree, Some(idents)));
 }
 
 fn generate_braket_heirarchy(tokens: &Vec<token::Token>) -> Result<Tree, ParsingError> {
@@ -140,7 +136,7 @@ fn generate_braket_heirarchy(tokens: &Vec<token::Token>) -> Result<Tree, Parsing
     fn braket_construct(
         tokens: &Vec<token::Token>,
         cursor: &mut usize,
-    ) -> Result<ast::Node, ParsingError> {
+    ) -> Result<Node, ParsingError> {
         let origin = *cursor;
         let matching = match find_matching(&tokens, *cursor) {
             Ok(m) => m,
@@ -158,13 +154,16 @@ fn generate_braket_heirarchy(tokens: &Vec<token::Token>) -> Result<Tree, Parsing
         *cursor = matching + 1; // move cursor to after match
         match &tokens[origin].token {
             token::TokenType::Braket(token::Braket::OpenBrace) => {
-                Ok(ast::Node::Construction(ast::Construction::Brace(content)))
+                Ok(Node::Construction(Construction::Brace(Brace {
+                    identifiers: None,
+                    content,
+                })))
             }
-            token::TokenType::Braket(token::Braket::OpenSquareBraket) => Ok(
-                ast::Node::Construction(ast::Construction::SquareBraket(content)),
-            ),
+            token::TokenType::Braket(token::Braket::OpenSquareBraket) => {
+                Ok(Node::Construction(Construction::SquareBraket(content)))
+            }
             token::TokenType::Braket(token::Braket::OpenParen) => {
-                Ok(ast::Node::Construction(ast::Construction::Paren(content)))
+                Ok(Node::Construction(Construction::Paren(content)))
             }
             _s => Err(ParsingError::NonMatchable(*_s)),
         }
@@ -185,7 +184,7 @@ fn generate_braket_heirarchy(tokens: &Vec<token::Token>) -> Result<Tree, Parsing
             }
             _ => {
                 let con = Construction::Token(tokens[cursor]);
-                constructions.push(Box::new(ast::Node::Construction(con)));
+                constructions.push(Box::new(Node::Construction(con)));
                 cursor += 1;
             }
         }
@@ -197,11 +196,7 @@ fn generate_braket_heirarchy(tokens: &Vec<token::Token>) -> Result<Tree, Parsing
 fn parse_literals(tree: &Tree, program: &String) -> Result<Tree, ParsingError> {
     let mut parsed_tree: Tree = Vec::new();
 
-    fn literal(
-        t: token::Token,
-        v: token::Value,
-        program: &String,
-    ) -> Result<ast::Node, ParsingError> {
+    fn literal(t: token::Token, v: token::Value, program: &String) -> Result<Node, ParsingError> {
         let lit: ast::Literal;
         lit = match v {
             token::Value::Int => ast::Literal {
@@ -270,32 +265,38 @@ fn parse_literals(tree: &Tree, program: &String) -> Result<Tree, ParsingError> {
                 value: ast::RealValue::Error,
             },
         };
-        return Ok(ast::Node::Expression(ast::Expression::Value(
+        return Ok(Node::Expression(ast::Expression::Value(
             ast::Value::Literal(lit),
         )));
     }
 
     for node in tree {
         parsed_tree.push(match node.as_ref() {
-            ast::Node::Construction(c) => match c {
-                ast::Construction::Brace(k) => match parse_literals(&k, program) {
-                    Ok(a) => Box::new(ast::Node::Construction(ast::Construction::Brace(a))),
+            Node::Construction(c) => match c {
+                Construction::Brace(Brace {
+                    identifiers: id,
+                    content: k,
+                }) => match parse_literals(&k, program) {
+                    Ok(a) => Box::new(Node::Construction(Construction::Brace(Brace {
+                        identifiers: id.clone(),
+                        content: a,
+                    }))),
                     Err(e) => return Err(e),
                 },
-                ast::Construction::SquareBraket(k) => match parse_literals(&k, program) {
-                    Ok(a) => Box::new(ast::Node::Construction(ast::Construction::SquareBraket(a))),
+                Construction::SquareBraket(k) => match parse_literals(&k, program) {
+                    Ok(a) => Box::new(Node::Construction(Construction::SquareBraket(a))),
                     Err(e) => return Err(e),
                 },
-                ast::Construction::Paren(k) => match parse_literals(&k, program) {
-                    Ok(a) => Box::new(ast::Node::Construction(ast::Construction::Paren(a))),
+                Construction::Paren(k) => match parse_literals(&k, program) {
+                    Ok(a) => Box::new(Node::Construction(Construction::Paren(a))),
                     Err(e) => return Err(e),
                 },
-                ast::Construction::Token(t) => match t.token {
+                Construction::Token(t) => match t.token {
                     token::TokenType::Value(v) => match literal(*t, v, program) {
                         Ok(a) => Box::new(a),
                         Err(e) => return Err(e),
                     },
-                    _s => Box::new(ast::Node::Construction(ast::Construction::Token(*t))),
+                    _s => Box::new(Node::Construction(Construction::Token(*t))),
                 },
             },
             _s => Box::new(_s.clone()),
@@ -345,10 +346,9 @@ pub fn print_tree(tree: Tree, offset: usize) {
     for node in tree {
         println!("{}", (*node).display(offset));
         match *node {
-            ast::Node::Construction(Construction::Brace(k))
-            | ast::Node::Construction(Construction::Paren(k))
-            | ast::Node::Construction(Construction::SquareBraket(k)) => print_tree(k, offset + 1),
-            ast::Node::Construction(Construction::Token(t)) => {
+            Node::Construction(Construction::Paren(k))
+            | Node::Construction(Construction::SquareBraket(k)) => print_tree(k, offset + 1),
+            Node::Construction(Construction::Token(t)) => {
                 let mut spaces: Vec<String> = Vec::new();
                 for _ in 0..offset + 1 {
                     spaces.push(String::from("    "));
@@ -357,10 +357,10 @@ pub fn print_tree(tree: Tree, offset: usize) {
                 let off = spaces.join("");
                 println!("{}{}", off, t);
             }
-            ast::Node::Scope(ast::Scope {
+            Node::Construction(Construction::Brace(ast::Brace {
                 identifiers: _,
                 content: c,
-            }) => print_tree(c, offset + 1),
+            })) => print_tree(c, offset + 1),
             _ => (),
         };
     }
