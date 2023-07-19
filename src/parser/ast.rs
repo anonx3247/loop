@@ -335,7 +335,7 @@ pub enum Construction {
 
 #[derive(Clone)]
 pub struct Brace {
-    pub identifiers: Option<IdentMap>,
+    pub identifiers: IdentMap,
     pub content: Vec<Box<Node>>,
 }
 

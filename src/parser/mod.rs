@@ -99,10 +99,7 @@ fn parse_function_calls(tree: &Tree, program: &String) -> Result<Tree, ParsingEr
 }
     */
 
-fn generate_scopes(
-    tree: &Tree,
-    program: &String,
-) -> Result<(Tree, Option<ast::IdentMap>), ParsingError> {
+fn generate_scopes(tree: &Tree, program: &String) -> Result<(Tree, ast::IdentMap), ParsingError> {
     let mut new_tree: Tree = Vec::new();
     let mut idents: ast::IdentMap = HashMap::new();
     for node in tree {
@@ -126,7 +123,7 @@ fn generate_scopes(
         }
     }
 
-    return Ok((new_tree, Some(idents)));
+    return Ok((new_tree, idents));
 }
 
 fn generate_braket_heirarchy(tokens: &Vec<token::Token>) -> Result<Tree, ParsingError> {
@@ -155,7 +152,7 @@ fn generate_braket_heirarchy(tokens: &Vec<token::Token>) -> Result<Tree, Parsing
         match &tokens[origin].token {
             token::TokenType::Braket(token::Braket::OpenBrace) => {
                 Ok(Node::Construction(Construction::Brace(Brace {
-                    identifiers: None,
+                    identifiers: HashMap::new(),
                     content,
                 })))
             }
