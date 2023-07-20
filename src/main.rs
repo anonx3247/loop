@@ -15,7 +15,7 @@ fn main() {
         //println!("{}: {}", i, tokens[i]);
     }
 
-    let tree = match parser::parse(&tokens, &program) {
+    let tree = match parser::raw_parser::parse_raw(&tokens, &program) {
         Ok(tr) => tr,
         Err(e) => panic!("{:?}", e),
     };
