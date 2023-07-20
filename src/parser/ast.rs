@@ -1,9 +1,11 @@
 use crate::lexer::token::Token;
+use crate::parser::construction_ast;
 
 #[derive(Debug, Clone)]
 pub enum Node {
     Expression(Expression),
     Statement(Statement),
+    Construction(construction_ast::Node),
 }
 
 #[derive(Debug, Clone)]

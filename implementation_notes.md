@@ -12,3 +12,8 @@ I was about to implement the assignment and function call parsers but this is to
 In fact I should first parse lists of elements with `ConstructionList`,
 
 then defining tuples, or structs and enums will be much easier.
+
+Now for the parser, instead of making a bunch of "construction" nodes,
+
+I create a "raw" tree with the `construction_ast` module,
+then I will "clean" it and simplify it into the final ast using `ast` module types.
