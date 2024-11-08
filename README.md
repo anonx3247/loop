@@ -41,6 +41,10 @@ fn sum<T implements Addition> (items: List<T>) -> {
     }
     s
 }
+
+sum([1, 2, 3])
+sum(["hello", "world"])
+sum([2.3, 1e-4, 82.3])
 ```
 
 ### Named Parameters
