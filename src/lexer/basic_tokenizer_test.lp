@@ -6,9 +6,9 @@
 
 import {
 	'git:github.com/anonx3247/mymodule' -- as you can see you can add git repos as modules. they will be imported as submodules.
-	os
-	geometry
-	http
+	'std:os'
+	'std:geometry'
+	'std:http'
 	'my/other/module/in/this/path'
 }
 
@@ -22,11 +22,11 @@ enum Color { -- sumtypes / enums à la Rust
 response := async http.get( -- note that calling async functions requires the async keyword as well to make sure we know the value is async. (also any async method calling async methods is by definition async)
 	server: '192.168.0.1' -- named parameters
 	type: http.GetType.Text -- note that newlines serve the same purpose as ','
-)? ---
- optional propagation (you cannot simply give a value that has indeterminate type)
-this allows always knowing if a value returned is optional or not
-the same thing happens for errors with '!'
---- -- note this was a multiline comment.
+)? 
+-- optional propagation (you cannot simply give a value that has indeterminate type)
+-- this allows always knowing if a value returned is optional or not
+-- the same thing happens for errors with '!'
+-- note this was a multiline comment.
 
 red : Color = (255, 0, 0) -- we specify the type here in this variable declaration
 
@@ -87,7 +87,6 @@ abs class GeometryObject { -- a class can contain both methods and parameters or
 		mut .position: (i64, i64) -- implicit constructor (as you can see mutable parameters must be declared as such)
 	)
 	-- this implicit constructor is short for
-	---
 	let mut position : (i64, i64) -- let statements declare variables without assigning a value, thus they need a type
 	GemoetryObject init({position: (i64, i64)}) -> this.position = position
 
@@ -95,14 +94,12 @@ abs class GeometryObject { -- a class can contain both methods and parameters or
 	fn move_to({x: i64, y: i64}) -> position = (x, y)
 
 	get x -> position[0] -- you can define getters this way. (also tuples are indexable)
-	--- 
-	not unlike in other languages
-	a 'get' can only be pure functions
-	they cannot change the state of the object
-	to do so you will have to make new 'getter's with method notation
-	this ensures that getters truly work like parameters
-	and we can see when state changes on a get
-	---
+	-- not unlike in other languages
+	-- a 'get' can only be pure functions
+	-- they cannot change the state of the object
+	-- to do so you will have to make new 'getter's with method notation
+	-- this ensures that getters truly work like parameters
+	-- and we can see when state changes on a get
 	set x -> position[0] -- 'set' can only be defined this way with a clear reference to a mutable parameter of the class
 	get set y -> position[1] 	 -- as you can see you can also define them both at the same time here
 }
@@ -190,7 +187,7 @@ class Set<T> implements Collection, Addition { -- classes can only inherit from 
 		}
 	}
 
-	#overload
+	@overload
 	fn in(element: T) -> _elements[element] except false -- here we are overloading the Collection class's 'in' member, this overloads the 'in keyword'
 
 	fn insert(element: T) {
@@ -206,10 +203,10 @@ class Set<T> implements Collection, Addition { -- classes can only inherit from 
 		}
 	}
 
-	#overload
+	@overload
 	fn add(Set<T> b) -> Set(elements: _elements.keys + b.keys)
 
-	#overload
+	@overload
 	get zero -> Set<T>(elements: [])
 }
 
