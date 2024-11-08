@@ -30,6 +30,23 @@ fn fibbonaci(n: uint) -> if n <= 1 { 1 } else {
 fibbonaci(3)
 ```
 
+### FizzBuzz
+
+```v
+numbers := 0..20
+
+for number in numbers {
+    mut s : str = ''
+    if number % 3 == 0 {
+        s += 'Fizz'
+    }
+    if number % 5 == 0 {
+        s += 'Buzz'
+    }
+    print(s)
+}
+```
+
 ### Generics
 
 ```v
