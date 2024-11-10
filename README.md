@@ -15,7 +15,7 @@ diving into the compiler.
 module main
 
 fn main() {
-    print("Hello World!)
+    print("Hello World!")
 }
 ```
 ### Fibbonaci Sequence
