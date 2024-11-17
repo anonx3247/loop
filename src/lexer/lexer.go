@@ -146,6 +146,8 @@ const (
 	EXCEPT
 )
 
+type TokenPhrase = []Token
+
 var keywords = map[string]TokenType{
 	"async":    ASYNC,
 	"module":   MODULE,
@@ -468,8 +470,8 @@ func (s Code) Split(splitter ...string) []string {
 	return strings.Split(string(s), splitter[0])
 }
 
-func (s Code) Tokenize() ([]Token, error) {
-	tokens := []Token{}
+func (s Code) Tokenize() (TokenPhrase, error) {
+	tokens := TokenPhrase{}
 	for _, line := range s.Split() {
 		if len(line) == 0 {
 			continue
@@ -485,8 +487,8 @@ func (s Code) Tokenize() ([]Token, error) {
 	return tokens, nil
 }
 
-func tokenizeLine(line string) (tokens []Token, err error) {
-	tokens = []Token{}
+func tokenizeLine(line string) (tokens TokenPhrase, err error) {
+	tokens = TokenPhrase{}
 	line = strings.TrimSpace(line)
 	idx := 0
 	newIdx := 0
@@ -505,7 +507,7 @@ func tokenizeLine(line string) (tokens []Token, err error) {
 	return tokens, nil
 }
 
-func tokenizeNext(line string, tokens []Token, idx int) (newTokens []Token, newIdx int, err error) {
+func tokenizeNext(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	newTokens = tokens
 	newIdx = idx
 	if idx >= len(line) {
@@ -555,7 +557,7 @@ func getKeys(m map[string]TokenType) []string {
 	return keys
 }
 
-func tokenizeFromMap(line string, tokens []Token, idx int, m map[string]TokenType) ([]Token, int, error) {
+func tokenizeFromMap(line string, tokens TokenPhrase, idx int, m map[string]TokenType) (newTokens TokenPhrase, newIdx int, err error) {
 	keys := getKeys(m)
 	sortKeys(keys)
 	for _, k := range keys {
@@ -567,17 +569,17 @@ func tokenizeFromMap(line string, tokens []Token, idx int, m map[string]TokenTyp
 	return tokens, idx, nil
 }
 
-func tokenizeKeyword(line string, tokens []Token, idx int) ([]Token, int, error) {
+func tokenizeKeyword(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	// we use greedy matching here so we can match the longest possible keyword
 	return tokenizeFromMap(line, tokens, idx, keywords)
 }
 
-func tokenizeSymbol(line string, tokens []Token, idx int) ([]Token, int, error) {
+func tokenizeSymbol(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	return tokenizeFromMap(line, tokens, idx, symbols)
 }
 
-func tokenizeType(line string, tokens []Token, idx int) ([]Token, int, error) {
-	tokens, newIdx, err := tokenizeFromMap(line, tokens, idx, types)
+func tokenizeType(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
+	newTokens, newIdx, err = tokenizeFromMap(line, tokens, idx, types)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -595,7 +597,7 @@ func tokenizeType(line string, tokens []Token, idx int) ([]Token, int, error) {
 	}
 }
 
-func tokenizeIdentifier(line string, tokens []Token, idx int) ([]Token, int, error) {
+func tokenizeIdentifier(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	// identifiers are either of the form hello_world or HELLO_WORLD
 	regex := regexp.MustCompile(`^[a-z_][a-z0-9_]*|^[A-Z_][a-zA-Z0-9_]*`)
 	if regex.MatchString(line[idx:]) {
@@ -605,7 +607,7 @@ func tokenizeIdentifier(line string, tokens []Token, idx int) ([]Token, int, err
 	return tokens, idx, nil
 }
 
-func tokenizeInteger(line string, tokens []Token, idx int) ([]Token, int, error) {
+func tokenizeInteger(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	regex := regexp.MustCompile(`^[0-9]+`)
 	if regex.MatchString(line[idx:]) {
 		tokens = append(tokens, Token{Type: INTEGER, Value: regex.FindString(line[idx:])})
@@ -614,7 +616,7 @@ func tokenizeInteger(line string, tokens []Token, idx int) ([]Token, int, error)
 	return tokens, idx, nil
 }
 
-func tokenizeFloat(line string, tokens []Token, idx int) ([]Token, int, error) {
+func tokenizeFloat(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	// floats are either of the form 1.23 or 0.32e12 or 4.8e-10
 	regex := regexp.MustCompile(`^[0-9]*(\.[0-9]+)?e-?[0-9]+|^[0-9]+\.[0-9]+`)
 	if regex.MatchString(line[idx:]) {
@@ -624,7 +626,7 @@ func tokenizeFloat(line string, tokens []Token, idx int) ([]Token, int, error) {
 	return tokens, idx, nil
 }
 
-func tokenizeComment(line string, tokens []Token, idx int) ([]Token, int, error) {
+func tokenizeComment(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	// single line comments start with '--'
 	// multi line comments start with '---' and end with '---'
 	// for now we won't handle block comments
@@ -635,7 +637,7 @@ func tokenizeComment(line string, tokens []Token, idx int) ([]Token, int, error)
 	return tokens, idx, nil
 }
 
-func tokenizeString(line string, tokens []Token, idx int) ([]Token, int, error) {
+func tokenizeString(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	// strings are enclosed in double quotes or single quotes
 	// for now we won't handle escape sequences
 	// double quote regex
@@ -653,7 +655,7 @@ func tokenizeString(line string, tokens []Token, idx int) ([]Token, int, error) 
 	return tokens, idx, nil
 }
 
-func tokenizeDecorator(line string, tokens []Token, idx int) ([]Token, int, error) {
+func tokenizeDecorator(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
 	regex := regexp.MustCompile(`^@[a-zA-Z_][a-zA-Z0-9_]*`)
 	if regex.MatchString(line[idx:]) {
 		tokens = append(tokens, Token{Type: DECORATOR, Value: regex.FindString(line[idx:])})
