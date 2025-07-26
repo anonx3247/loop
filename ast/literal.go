@@ -26,7 +26,7 @@ func (l Literal) CheckDepth(startDepth int) (int, error) {
 	return startDepth, nil
 }
 
-func NewLiteral(tok lexer.Token) (Literal, error) {
+func LiteralFromToken(tok lexer.Token) (Literal, error) {
 	switch tok.Type {
 	case lexer.NUMBER_LITERAL:
 		if strings.Contains(tok.Value.String(), ".") || strings.Contains(tok.Value.String(), "e") {
@@ -56,4 +56,8 @@ func NewLiteral(tok lexer.Token) (Literal, error) {
 		return Literal{Value: val}, nil
 	}
 	return Literal{}, tok.Error("invalid literal")
+}
+
+func NewLiteral(value Value) Literal {
+	return Literal{Value: value}
 }

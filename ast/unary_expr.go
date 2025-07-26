@@ -35,13 +35,6 @@ func (u UnaryExpr) Eval() (Value, error) {
 
 }
 
-func (u UnaryExpr) CheckDepth(startDepth int) (int, error) {
-	if startDepth > 100 {
-		return -1, utils.Error{Source: u.Source(), Message: "expression too deep"}
-	}
-	return u.Value.CheckDepth(startDepth + 1)
-}
-
 func AddressOf(val Value, source utils.String) (Value, error) {
 	panic("address_of not implemented yet")
 }

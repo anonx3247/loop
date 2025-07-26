@@ -79,22 +79,33 @@ func (p *Parser) Consume() (lexer.Token, error) {
 	return consumedToken, nil
 }
 
-func (p *Parser) Next() (lexer.Token, error) {
-	if p.pos >= len(p.tokens) {
-		return lexer.Token{}, p.error("unexpected EOF")
-	}
-
-	return p.Consume()
-}
-
-func (p *Parser) Parse() (ast.Program, error) {
-	program := ast.Program{}
+func (p *Parser) Parse() (ast.Scope, error) {
+	program := ast.Scope{}
 	for p.pos < len(p.tokens) {
-		expr, err := p.ParseExpr()
+		tok, err := p.Peek()
 		if err != nil {
-			return program, err
+			return program, nil
 		}
-		program.Exprs = append(program.Exprs, expr)
+		if lexer.S_UNARY_OPERATOR.Matches(tok.Type) || lexer.S_VALUE.Matches(tok.Type) || tok.Type == lexer.IF {
+			expr, err := p.ParseExpr()
+			if err != nil {
+				return program, err
+			}
+			program.Exprs = append(program.Exprs, expr)
+		} else if p.tokens[p.pos].Type == lexer.L_BRACE {
+			p.Consume()
+			scope, err := p.Parse()
+			if err != nil {
+				return program, err
+			}
+			_, err = p.TryConsume(lexer.R_BRACE)
+			if err != nil {
+				return program, err
+			}
+			program.Exprs = append(program.Exprs, &scope)
+		} else {
+			break
+		}
 	}
 	return program, nil
 }

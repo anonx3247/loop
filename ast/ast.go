@@ -4,14 +4,9 @@ import (
 	"com.loop.anonx3247/utils"
 )
 
-type Program struct {
-	Exprs []Expr
-}
-
 type Expr interface {
 	Source() utils.String
 	Eval() (Value, error)
-	CheckDepth(startDepth int) (int, error)
 }
 type Value interface {
 	Type() Type
@@ -37,9 +32,27 @@ func (p ParenExpr) Eval() (Value, error) {
 	return p.Expr.Eval()
 }
 
-func (p ParenExpr) CheckDepth(startDepth int) (int, error) {
-	if startDepth > 100 {
-		return -1, utils.Error{Source: p.Source(), Message: "expression too deep"}
+type Scope struct {
+	Exprs []Expr
+}
+
+func (s *Scope) Eval() (Value, error) {
+	for i, expr := range s.Exprs {
+		if i == len(s.Exprs)-1 {
+			return expr.Eval()
+		}
+		_, err := expr.Eval()
+		if err != nil {
+			return nil, err
+		}
 	}
-	return p.Expr.CheckDepth(startDepth + 1)
+	return nil, nil
+}
+
+func (s *Scope) Source() utils.String {
+	sources := make([]utils.String, len(s.Exprs))
+	for i, expr := range s.Exprs {
+		sources[i] = expr.Source()
+	}
+	return utils.Encompass(sources...)
 }

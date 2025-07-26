@@ -84,13 +84,12 @@ func runREPL() {
 			continue
 		}
 
-		expr, err := p.ParseExpr()
+		program, err := p.Parse()
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
-
-		val, err := expr.Eval()
+		val, err := program.Eval()
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue

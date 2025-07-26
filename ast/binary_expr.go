@@ -16,24 +16,6 @@ func (b BinaryExpr) Source() utils.String {
 	return b.source
 }
 
-func (b BinaryExpr) CheckDepth(startDepth int) (int, error) {
-	if startDepth > 100 {
-		return -1, utils.Error{Source: b.Source(), Message: "expression too deep"}
-	}
-	leftDepth, err := (*b.Left).CheckDepth(startDepth + 1)
-	if err != nil {
-		return -1, err
-	}
-	rightDepth, err := (*b.Right).CheckDepth(startDepth + 1)
-	if err != nil {
-		return -1, err
-	}
-	if leftDepth != rightDepth {
-		return -1, utils.Error{Source: b.Source(), Message: "expression too deep"}
-	}
-	return leftDepth, nil
-}
-
 func (b BinaryExpr) Eval() (Value, error) {
 	left, err := (*b.Left).Eval()
 	if err != nil {
