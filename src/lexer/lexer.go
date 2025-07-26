@@ -1,665 +1,268 @@
 package lexer
 
 import (
-	"fmt"
 	"regexp"
 	"sort"
-	"strings"
+
+	"com.loop.anonx3247/src/utils"
 )
 
-type TokenType int
+var (
+	NUMBER_RE        = regexp.MustCompile(`^\d+(\.\d+)?([eE][-]?\d+)?`)
+	IDENTIFIER_RE    = regexp.MustCompile(`^[a-z_][a-zA-Z0-9_]*`)
+	GENERIC_RE       = regexp.MustCompile(`^[A-Z]`)
+	USER_DEFINED_RE  = regexp.MustCompile(`^[A-Z][a-zA-Z0-9_]+`)
+	STRING_RE_SINGLE = regexp.MustCompile(`^'([^']|\\')+'`)
+	STRING_RE_DOUBLE = regexp.MustCompile(`^"([^"]|\\")+"`)
+	STRING_RE_RAW    = regexp.MustCompile("^`([^`]|\\`)+`")
 
-const (
-	// TEXTUAL TOKENS
-	EOF TokenType = iota
-	NEWLINE
-	OPEN_PARENTHESIS
-	CLOSE_PARENTHESIS
-	OPEN_BRACE
-	CLOSE_BRACE
-	OPEN_BRACKET
-	CLOSE_BRACKET
-	COMMA
-	COLON
-	PERIOD
-	SEMICOLON
-	PLUS
-	MINUS
-	MULTIPLY
-	DIVIDE
-	MODULO
-	INT_DIVIDE
+	SINGLE_LINE_COMMENT_RE = regexp.MustCompile(`^--.*`)
+	MULTI_LINE_COMMENT_RE  = regexp.MustCompile(`^---`)
 
-	// IDENTIFIERS
-	IDENTIFIER
-
-	// LITERALS
-	INTEGER
-	FLOAT
-	STRING
-
-	// VALUES
-	TRUE
-	FALSE
-	NIL
-
-	// COMMENTS
-	LINE_COMMENT
-	BLOCK_COMMENT
-
-	// STRUCTURES
-	ENUM
-	STRUCT
-	REQUIRED
-
-	// OOP
-	CLASS
-	ABSTRACT
-	IMPLEMENTS
-	GET
-	SET
-	GETTER
-	SETTER
-	OF
-	AS
-	SUPER
-	IS
-	DECORATOR
-	THIS
-
-	// FUNCTIONS
-	FUNCTION
-	ARROW
-	RETURN
-	ASYNC
-
-	// MODULES
-	MODULE
-	IMPORT
-	FROM
-
-	// FOR LOOP
-	FOR
-	BREAK
-	CONTINUE
-	IN
-	RANGE
-
-	// LOOPS
-	WHILE
-	LOOP
-
-	// CONDITIONALS
-	IF
-	ELIF
-	ELSE
-
-	// MATCH
-	MATCH
-	MATCH_ARROW
-
-	// VARIABLE DECLARATIONS
-	MUT
-	LET
-
-	// TYPES
-	TYPE
-	U8_TYPE
-	U16_TYPE
-	U32_TYPE
-	U64_TYPE
-	I8_TYPE
-	I16_TYPE
-	I32_TYPE
-	I64_TYPE
-	F32_TYPE
-	F64_TYPE
-	BOOL_TYPE
-	CHAR_TYPE
-	STR_TYPE
-	INT_TYPE
-	UINT_TYPE
-	FLOAT_TYPE
-
-	// ASSIGNMENTS
-	ASSIGN
-	PLUS_ASSIGN
-	MINUS_ASSIGN
-	MULTIPLY_ASSIGN
-	DIVIDE_ASSIGN
-	MODULO_ASSIGN
-
-	// COMPARISONS
-	EQUAL
-	NOT_EQUAL
-	GREATER
-	GREATER_EQUAL
-	LESS
-	LESS_EQUAL
-	AND
-	OR
-	NOT
-
-	// OPTIONALS
-	OPTIONAL
-	ERROR
-	EXCEPT
+	KEYWORDS   = regexp.MustCompile(`^(if|elif|else|while|for|loop|ret|break|continue|match|comp|type|abs|impl|mod|use|import|as|from|fn|let|mut|in|is|and|or|not|true|false|none|self|super|except|new|del|exit)`)
+	BASE_TYPES = regexp.MustCompile(`^(u8|u16|u32|u64|u128|i8|i16|i32|i64|i128|f32|f64|bool|char|string)`)
+	OPERATORS  = regexp.MustCompile(`^(\(|\)|\{|\}|\[|\]|\:=|\:|\.\.|\+|\+=|-|-=|\*|\*=|/|/=|%|%=|~|~=|&|&=|\||\|=|\^|\^=|#|\.|\,|->|=>|==|!=|>|>=|<|<=)`)
 )
 
-type TokenPhrase = []Token
-
-var keywords = map[string]TokenType{
-	"async":    ASYNC,
-	"module":   MODULE,
-	"import":   IMPORT,
-	"from":     FROM,
-	"required": REQUIRED,
-	"optional": OPTIONAL,
-	"struct":   STRUCT,
-	"class":    CLASS,
-	"abs":      ABSTRACT,
-	"impl":     IMPLEMENTS,
-	"enum":     ENUM,
-	"fn":       FUNCTION,
-	"let":      LET,
-	"mut":      MUT,
-	"getter":   GETTER,
-	"setter":   SETTER,
-	"get":      GET,
-	"set":      SET,
-	"if":       IF,
-	"else":     ELSE,
-	"match":    MATCH,
-	"for":      FOR,
-	"while":    WHILE,
-	"loop":     LOOP,
-	"ret":      RETURN,
-	"break":    BREAK,
-	"continue": CONTINUE,
-	"true":     TRUE,
-	"false":    FALSE,
-	"nil":      NIL,
-	"as":       AS,
-	"is":       IS,
-	"in":       IN,
-	"of":       OF,
-	"except":   EXCEPT,
-	"super":    SUPER,
-	"this":     THIS,
+type Lexer struct {
+	source string
+	pos    int
 }
 
-var symbols = map[string]TokenType{
-	"+":   PLUS,
-	"-":   MINUS,
-	"*":   MULTIPLY,
-	"/":   DIVIDE,
-	"%":   MODULO,
-	"//":  INT_DIVIDE,
-	":=":  ASSIGN,
-	"+=":  PLUS_ASSIGN,
-	"-=":  MINUS_ASSIGN,
-	"*=":  MULTIPLY_ASSIGN,
-	"/=":  DIVIDE_ASSIGN,
-	"%=":  MODULO_ASSIGN,
-	"==":  EQUAL,
-	"!=":  NOT_EQUAL,
-	">":   GREATER,
-	">=":  GREATER_EQUAL,
-	"<":   LESS,
-	"<=":  LESS_EQUAL,
-	"and": AND,
-	"or":  OR,
-	"not": NOT,
-	"=>":  MATCH_ARROW,
-	"->":  ARROW,
-	"..":  RANGE,
-	":":   COLON,
-	",":   COMMA,
-	".":   PERIOD,
-	";":   SEMICOLON,
-	"(":   OPEN_PARENTHESIS,
-	")":   CLOSE_PARENTHESIS,
-	"{":   OPEN_BRACE,
-	"}":   CLOSE_BRACE,
-	"[":   OPEN_BRACKET,
-	"]":   CLOSE_BRACKET,
+func NewLexer(source string) *Lexer {
+	return &Lexer{source: source}
 }
 
-var types = map[string]TokenType{
-	"u8":    U8_TYPE,
-	"u16":   U16_TYPE,
-	"u32":   U32_TYPE,
-	"u64":   U64_TYPE,
-	"i8":    I8_TYPE,
-	"i16":   I16_TYPE,
-	"i32":   I32_TYPE,
-	"i64":   I64_TYPE,
-	"f32":   F32_TYPE,
-	"f64":   F64_TYPE,
-	"bool":  BOOL_TYPE,
-	"char":  CHAR_TYPE,
-	"str":   STR_TYPE,
-	"int":   INT_TYPE,
-	"uint":  UINT_TYPE,
-	"float": FLOAT_TYPE,
+func (l *Lexer) slice(length int) utils.String {
+	return utils.StringFrom(l.source, l.pos, length)
 }
 
-func (t TokenType) String() string {
-	switch t {
-	case EOF:
-		return "EOF"
-	case NEWLINE:
-		return "NEWLINE"
-	case OPEN_PARENTHESIS:
-		return "OPEN_PARENTHESIS"
-	case CLOSE_PARENTHESIS:
-		return "CLOSE_PARENTHESIS"
-	case OPEN_BRACE:
-		return "OPEN_BRACE"
-	case CLOSE_BRACE:
-		return "CLOSE_BRACE"
-	case OPEN_BRACKET:
-		return "OPEN_BRACKET"
-	case CLOSE_BRACKET:
-		return "CLOSE_BRACKET"
-	case COMMA:
-		return "COMMA"
-	case COLON:
-		return "COLON"
-	case PERIOD:
-		return "PERIOD"
-	case SEMICOLON:
-		return "SEMICOLON"
-	case PLUS:
-		return "PLUS"
-	case MINUS:
-		return "MINUS"
-	case MULTIPLY:
-		return "MULTIPLY"
-	case DIVIDE:
-		return "DIVIDE"
-	case MODULO:
-		return "MODULO"
-	case INT_DIVIDE:
-		return "INT_DIVIDE"
-	case IDENTIFIER:
-		return "IDENTIFIER"
-	case INTEGER:
-		return "INTEGER"
-	case FLOAT:
-		return "FLOAT"
-	case STRING:
-		return "STRING"
-	case TRUE:
-		return "TRUE"
-	case FALSE:
-		return "FALSE"
-	case NIL:
-		return "NIL"
-	case LINE_COMMENT:
-		return "LINE_COMMENT"
-	case BLOCK_COMMENT:
-		return "BLOCK_COMMENT"
-	case ENUM:
-		return "ENUM"
-	case STRUCT:
-		return "STRUCT"
-	case REQUIRED:
-		return "REQUIRED"
-	case CLASS:
-		return "CLASS"
-	case ABSTRACT:
-		return "ABSTRACT"
-	case IMPLEMENTS:
-		return "IMPLEMENTS"
-	case GET:
-		return "GET"
-	case SET:
-		return "SET"
-	case GETTER:
-		return "GETTER"
-	case SETTER:
-		return "SETTER"
-	case OF:
-		return "OF"
-	case AS:
-		return "AS"
-	case SUPER:
-		return "SUPER"
-	case THIS:
-		return "THIS"
-	case FUNCTION:
-		return "FUNCTION"
-	case ARROW:
-		return "ARROW"
-	case RETURN:
-		return "RETURN"
-	case ASYNC:
-		return "ASYNC"
-	case MODULE:
-		return "MODULE"
-	case IMPORT:
-		return "IMPORT"
-	case FROM:
-		return "FROM"
-	case FOR:
-		return "FOR"
-	case BREAK:
-		return "BREAK"
-	case CONTINUE:
-		return "CONTINUE"
-	case IN:
-		return "IN"
-	case RANGE:
-		return "RANGE"
-	case WHILE:
-		return "WHILE"
-	case LOOP:
-		return "LOOP"
-	case IF:
-		return "IF"
-	case ELIF:
-		return "ELIF"
-	case ELSE:
-		return "ELSE"
-	case MATCH:
-		return "MATCH"
-	case MATCH_ARROW:
-		return "MATCH_ARROW"
-	case MUT:
-		return "MUT"
-	case LET:
-		return "LET"
-	case TYPE:
-		return "TYPE"
-	case U8_TYPE:
-		return "U8_TYPE"
-	case U16_TYPE:
-		return "U16_TYPE"
-	case U32_TYPE:
-		return "U32_TYPE"
-	case U64_TYPE:
-		return "U64_TYPE"
-	case I8_TYPE:
-		return "I8_TYPE"
-	case I16_TYPE:
-		return "I16_TYPE"
-	case I32_TYPE:
-		return "I32_TYPE"
-	case I64_TYPE:
-		return "I64_TYPE"
-	case F32_TYPE:
-		return "F32_TYPE"
-	case F64_TYPE:
-		return "F64_TYPE"
-	case BOOL_TYPE:
-		return "BOOL_TYPE"
-	case CHAR_TYPE:
-		return "CHAR_TYPE"
-	case STR_TYPE:
-		return "STR_TYPE"
-	case INT_TYPE:
-		return "INT_TYPE"
-	case UINT_TYPE:
-		return "UINT_TYPE"
-	case FLOAT_TYPE:
-		return "FLOAT_TYPE"
-	case EXCEPT:
-		return "EXCEPT"
-	case ERROR:
-		return "ERROR"
-	case DECORATOR:
-		return "DECORATOR"
-	case ASSIGN:
-		return "ASSIGN"
-	case PLUS_ASSIGN:
-		return "PLUS_ASSIGN"
-	case MINUS_ASSIGN:
-		return "MINUS_ASSIGN"
-	case MULTIPLY_ASSIGN:
-		return "MULTIPLY_ASSIGN"
-	case DIVIDE_ASSIGN:
-		return "DIVIDE_ASSIGN"
-	case MODULO_ASSIGN:
-		return "MODULO_ASSIGN"
-	case EQUAL:
-		return "EQUAL"
-	case NOT_EQUAL:
-		return "NOT_EQUAL"
-	case GREATER:
-		return "GREATER"
-	case GREATER_EQUAL:
-		return "GREATER_EQUAL"
-	case LESS:
-		return "LESS"
-	case LESS_EQUAL:
-		return "LESS_EQUAL"
-	case AND:
-		return "AND"
-	case OR:
-		return "OR"
-	case NOT:
-		return "NOT"
-	case OPTIONAL:
-		return "OPTIONAL"
-	default:
-		return fmt.Sprintf("UNKNOWN %d", int(t))
-	}
-}
-
-type Code string
-
-type Token struct {
-	Type  TokenType
-	Value string
-}
-
-func (t Token) String() string {
-	switch t.Type {
-	case LINE_COMMENT, BLOCK_COMMENT, STRING, INTEGER, FLOAT, IDENTIFIER, TYPE:
-		return t.Value
-	default:
-		return t.Type.String()
-	}
-}
-
-func (s Code) Split(splitter ...string) []string {
-	if len(splitter) == 0 {
-		return strings.Split(string(s), "\n")
-	}
-	return strings.Split(string(s), splitter[0])
-}
-
-func (s Code) Tokenize() (TokenPhrase, error) {
-	tokens := TokenPhrase{}
-	for _, line := range s.Split() {
-		if len(line) == 0 {
-			continue
-		} else {
-			newTokens, err := tokenizeLine(line)
-			if err != nil {
-				return nil, err
-			}
-			tokens = append(tokens, newTokens...)
-		}
-	}
-
-	return tokens, nil
-}
-
-func tokenizeLine(line string) (tokens TokenPhrase, err error) {
-	tokens = TokenPhrase{}
-	line = strings.TrimSpace(line)
-	idx := 0
-	newIdx := 0
-	for idx < len(line) {
-		tokens, newIdx, err = tokenizeNext(line, tokens, idx)
+func (l *Lexer) Tokenize() (TokenList, error) {
+	tokens := TokenList{}
+	for l.pos < len(l.source) {
+		token, err := l.Next()
 		if err != nil {
-			return nil, err
+			return tokens, err
 		}
-		if newIdx == idx {
-			idx++
-		} else {
-			idx = newIdx
-		}
-	}
-
-	return tokens, nil
-}
-
-func tokenizeNext(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	newTokens = tokens
-	newIdx = idx
-	if idx >= len(line) {
-		return tokens, idx, nil
-	}
-	trimmed := strings.TrimSpace(line[idx:])
-	delta := len(line[idx:]) - len(trimmed)
-
-	attemptTokenize := func(tokenizer func(string, []Token, int) ([]Token, int, error)) ([]Token, int, error) {
-		return tokenizer(line, tokens, newIdx)
-	}
-
-	tokenizers := []func(string, []Token, int) ([]Token, int, error){
-		tokenizeComment,
-		tokenizeString,
-		tokenizeKeyword,
-		tokenizeFloat,
-		tokenizeInteger,
-		tokenizeSymbol,
-		tokenizeType,
-		tokenizeDecorator,
-		tokenizeIdentifier,
-	}
-
-	for _, tokenizer := range tokenizers {
-		newTokens, newIdx, err = attemptTokenize(tokenizer)
-		if err != nil {
-			return nil, 0, err
-		} else if newIdx != idx {
-			return newTokens, newIdx + delta, nil
+		tokens = append(tokens, token)
+		if token.Type == EOF {
+			return tokens, nil
 		}
 	}
-	return newTokens, newIdx, nil
+	return tokens, l.error("unexpected EOF")
 }
 
-func sortKeys(keys []string) {
-	sort.Slice(keys, func(i, j int) bool {
-		return len(keys[i]) > len(keys[j])
-	})
-}
-
-func getKeys(m map[string]TokenType) []string {
-	keys := []string{}
-	for k := range m {
-		keys = append(keys, k)
+func (l *Lexer) Match(re *regexp.Regexp) (bool, int) {
+	match := re.FindStringIndex(l.source[l.pos:])
+	if match == nil {
+		return false, 0
 	}
-	return keys
+	return true, match[1]
 }
 
-func tokenizeFromMap(line string, tokens TokenPhrase, idx int, m map[string]TokenType) (newTokens TokenPhrase, newIdx int, err error) {
-	keys := getKeys(m)
-	sortKeys(keys)
-	for _, k := range keys {
-		if strings.HasPrefix(line[idx:], k) {
-			tokens = append(tokens, Token{Type: m[k], Value: k})
-			return tokens, idx + len(k), nil
-		}
-	}
-	return tokens, idx, nil
-}
-
-func tokenizeKeyword(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	// we use greedy matching here so we can match the longest possible keyword
-	return tokenizeFromMap(line, tokens, idx, keywords)
-}
-
-func tokenizeSymbol(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	return tokenizeFromMap(line, tokens, idx, symbols)
-}
-
-func tokenizeType(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	newTokens, newIdx, err = tokenizeFromMap(line, tokens, idx, types)
-	if err != nil {
-		return nil, 0, err
-	}
-	if newIdx == idx {
-		// use regex for custom types
-		regex := regexp.MustCompile(`^[A-Z][a-zA-Z0-9_]?`)
-		if regex.MatchString(line[newIdx:]) {
-			tokens = append(tokens, Token{Type: TYPE, Value: line[newIdx:]})
-			return tokens, len(line), nil
-		} else {
-			return tokens, newIdx, nil
-		}
+func (l *Lexer) Next() (Token, error) {
+	offset := 0
+	defer func() {
+		l.pos += offset
+	}()
+	if l.pos >= len(l.source)-1 {
+		return Token{Type: EOF, Value: utils.String{}}, nil
 	} else {
-		return tokens, newIdx, nil
+
+		match, length := l.Match(SINGLE_LINE_COMMENT_RE)
+		if match {
+			l.pos += length
+			return l.Next()
+		}
+
+		match, length = l.Match(MULTI_LINE_COMMENT_RE)
+		if match {
+			l.pos += length
+			end_found := false
+			for l.pos < len(l.source) && !end_found {
+				match, length = l.Match(MULTI_LINE_COMMENT_RE)
+				if match {
+					end_found = true
+					l.pos += length
+					break
+				}
+				l.pos++
+			}
+			if !end_found {
+				return Token{}, l.error("unterminated multi-line comment")
+			}
+			return l.Next()
+		}
+
+		atom, err := l.tryTokenizeAtom()
+
+		if err == nil {
+			offset = len(atom.Value.String())
+			return atom, nil
+		}
+
+		for re, t := range map[*regexp.Regexp]TokenType{
+			IDENTIFIER_RE:    IDENTIFIER,
+			USER_DEFINED_RE:  USER_DEFINED,
+			GENERIC_RE:       GENERIC,
+			NUMBER_RE:        NUMBER_LITERAL,
+			STRING_RE_SINGLE: STRING_LITERAL,
+			STRING_RE_DOUBLE: STRING_LITERAL,
+			STRING_RE_RAW:    STRING_LITERAL,
+		} {
+			match, offset = l.Match(re)
+			if match {
+				return Token{Type: t, Value: l.slice(offset)}, nil
+			}
+		}
+
+		if l.source[l.pos] == ' ' || l.source[l.pos] == '\t' {
+			l.pos++
+			return l.Next()
+		}
+
+		if l.source[l.pos] == '\n' {
+			l.pos++
+			return Token{Type: NEWLINE, Value: l.slice(1)}, nil
+		}
+
+		return Token{}, l.error("unexpected token")
 	}
 }
 
-func tokenizeIdentifier(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	// identifiers are either of the form hello_world or HELLO_WORLD
-	regex := regexp.MustCompile(`^[a-z_][a-z0-9_]*|^[A-Z_][a-zA-Z0-9_]*`)
-	if regex.MatchString(line[idx:]) {
-		tokens = append(tokens, Token{Type: IDENTIFIER, Value: regex.FindString(line[idx:])})
-		return tokens, idx + len(regex.FindString(line[idx:])), nil
+func (l *Lexer) getLineAndColumn() (int, int) {
+	line := 1
+	column := 1
+	for i := 0; i < l.pos; i++ {
+		if l.source[i] == '\n' {
+			line++
+			column = 1
+		} else {
+			column++
+		}
 	}
-	return tokens, idx, nil
+	return line, column
 }
 
-func tokenizeInteger(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	regex := regexp.MustCompile(`^[0-9]+`)
-	if regex.MatchString(line[idx:]) {
-		tokens = append(tokens, Token{Type: INTEGER, Value: regex.FindString(line[idx:])})
-		return tokens, idx + len(regex.FindString(line[idx:])), nil
-	}
-	return tokens, idx, nil
+func (l *Lexer) error(message string) utils.Error {
+	line, column := l.getLineAndColumn()
+	return utils.Error{Source: l.source, Message: message, Line: line, Column: column}
 }
 
-func tokenizeFloat(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	// floats are either of the form 1.23 or 0.32e12 or 4.8e-10
-	regex := regexp.MustCompile(`^[0-9]*(\.[0-9]+)?e-?[0-9]+|^[0-9]+\.[0-9]+`)
-	if regex.MatchString(line[idx:]) {
-		tokens = append(tokens, Token{Type: FLOAT, Value: regex.FindString(line[idx:])})
-		return tokens, idx + len(regex.FindString(line[idx:])), nil
-	}
-	return tokens, idx, nil
-}
+func (l *Lexer) tryTokenizeAtom() (Token, error) {
 
-func tokenizeComment(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	// single line comments start with '--'
-	// multi line comments start with '---' and end with '---'
-	// for now we won't handle block comments
-	if strings.HasPrefix(line[idx:], "--") {
-		tokens = append(tokens, Token{Type: LINE_COMMENT, Value: line[idx:]})
-		return tokens, len(line), nil
+	type Pair struct {
+		Word string
+		Type TokenType
 	}
-	return tokens, idx, nil
-}
+	var words = []Pair{
+		{"if", IF},
+		{"elif", ELIF},
+		{"else", ELSE},
+		{"while", WHILE},
+		{"for", FOR},
+		{"loop", LOOP},
+		{"ret", RET},
+		{"break", BREAK},
+		{"continue", CONTINUE},
+		{"match", MATCH},
+		{"comp", COMP},
+		{"type", TYPE},
+		{"abs", ABS},
+		{"impl", IMPL},
+		{"mod", MOD},
+		{"use", USE},
+		{"import", IMPORT},
+		{"as", AS},
+		{"from", FROM},
+		{"fn", FN},
+		{"let", LET},
+		{"mut", MUT},
+		{"in", IN},
+		{"is", IS},
+		{"and", AND},
+		{"or", OR},
+		{"not", NOT},
+		{"true", TRUE},
+		{"false", FALSE},
+		{"none", NONE},
+		{"self", SELF},
+		{"super", SUPER},
+		{"except", EXCEPT},
+		{"new", NEW},
+		{"del", DEL},
+		{"exit", EXIT},
+		{"u8", U8},
+		{"u16", U16},
+		{"u32", U32},
+		{"u64", U64},
+		{"u128", U128},
+		{"i8", I8},
+		{"i16", I16},
+		{"i32", I32},
+		{"i64", I64},
+		{"i128", I128},
+		{"f32", F32},
+		{"f64", F64},
+		{"bool", BOOL},
+		{"char", CHAR},
+		{"string", STRING},
+		{"(", L_PAREN},
+		{")", R_PAREN},
+		{"{", L_BRACE},
+		{"}", R_BRACE},
+		{"[", L_BRACKET},
+		{"]", R_BRACKET},
+		{":", COLON},
+		{":=", COLON_ASSIGN},
+		{"..", RANGE},
+		{"+", PLUS},
+		{"+=", PLUS_ASSIGN},
+		{"-", MINUS},
+		{"-=", MINUS_ASSIGN},
+		{"*", MULTIPLY},
+		{"*=", MULTIPLY_ASSIGN},
+		{"/", DIVIDE},
+		{"/=", DIVIDE_ASSIGN},
+		{"%", MODULO},
+		{"%=", MODULO_ASSIGN},
+		{"?", OPTIONAL},
+		{"?=", OPTIONAL_ASSIGN},
+		{"!", ERROR_MARK},
+		{"~", BITWISE_NOT},
+		{"~=", BITWISE_NOT_ASSIGN},
+		{"&", BITWISE_AND},
+		{"&=", BITWISE_AND_ASSIGN},
+		{"|", BITWISE_OR},
+		{"|=", BITWISE_OR_ASSIGN},
+		{"^", BITWISE_XOR},
+		{"^=", BITWISE_XOR_ASSIGN},
+		{"<<", BITWISE_LEFT_SHIFT},
+		{"<<=", BITWISE_LEFT_SHIFT_ASSIGN},
+		{">>", BITWISE_RIGHT_SHIFT},
+		{">>=", BITWISE_RIGHT_SHIFT_ASSIGN},
+		{"#", ADDRESS_OF},
+		{".", PERIOD},
+		{",", COMMA},
+		{"->", MAP_ARROW},
+		{"=>", MATCH_ARROW},
+		{"==", EQUAL},
+		{"!=", NOT_EQUAL},
+		{">", GREATER_THAN},
+		{">=", GREATER_THAN_OR_EQUAL},
+		{"<", LESS_THAN},
+		{"<=", LESS_THAN_OR_EQUAL},
+	}
 
-func tokenizeString(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	// strings are enclosed in double quotes or single quotes
-	// for now we won't handle escape sequences
-	// double quote regex
-	regex := regexp.MustCompile(`^"[^"]*"`)
-	if regex.MatchString(line[idx:]) {
-		tokens = append(tokens, Token{Type: STRING, Value: regex.FindString(line[idx:])})
-		return tokens, idx + len(regex.FindString(line[idx:])), nil
-	}
-	// single quote regex
-	regex = regexp.MustCompile(`^'[^']*'`)
-	if regex.MatchString(line[idx:]) {
-		tokens = append(tokens, Token{Type: STRING, Value: regex.FindString(line[idx:])})
-		return tokens, idx + len(regex.FindString(line[idx:])), nil
-	}
-	return tokens, idx, nil
-}
+	sort.Slice(words, func(i, j int) bool {
+		return len(words[i].Word) > len(words[j].Word)
+	})
 
-func tokenizeDecorator(line string, tokens TokenPhrase, idx int) (newTokens TokenPhrase, newIdx int, err error) {
-	regex := regexp.MustCompile(`^@[a-zA-Z_][a-zA-Z0-9_]*`)
-	if regex.MatchString(line[idx:]) {
-		tokens = append(tokens, Token{Type: DECORATOR, Value: regex.FindString(line[idx:])})
-		return tokens, idx + len(regex.FindString(line[idx:])), nil
+	for _, word := range words {
+		if len(l.source[l.pos:]) >= len(word.Word) && l.source[l.pos:l.pos+len(word.Word)] == word.Word {
+			return Token{word.Type, l.slice(len(word.Word))}, nil
+		}
 	}
-	return tokens, idx, nil
+
+	return Token{_ANY_TOKEN, utils.String{}}, l.error("unknown token")
 }
