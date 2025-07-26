@@ -3,7 +3,7 @@ package lexer
 import (
 	"errors"
 
-	"com.loop.anonx3247/src/utils"
+	"com.loop.anonx3247/utils"
 )
 
 type Token struct {
@@ -19,12 +19,10 @@ const (
 	U16
 	U32
 	U64
-	U128
 	I8
 	I16
 	I32
 	I64
-	I128
 	F32
 	F64
 	BOOL
@@ -137,22 +135,23 @@ const (
 	S_TYPE
 	S_VALUE
 	S_OPERATOR
+	S_UNARY_OPERATOR
+	S_BINARY_OPERATOR
 	S_ASSIGN_OPERATOR
 	S_KEYWORD
 	S_TOKEN
 )
 
-type ShapeElement struct {
-	Type      ShapeType
-	TokenType TokenType
+func (t Token) Error(message string) error {
+	return utils.Error{Source: t.Value, Message: message}
 }
 
-func (s ShapeElement) Matches(token TokenType) bool {
+func (s ShapeType) Matches(token TokenType) bool {
 	var check bool
 
-	switch s.Type {
+	switch s {
 	case S_TYPE:
-		check = token == U8 || token == U16 || token == U32 || token == U64 || token == U128 || token == I8 || token == I16 || token == I32 || token == I64 || token == I128 || token == F32 || token == F64 || token == BOOL || token == CHAR || token == STRING || token == GENERIC || token == USER_DEFINED
+		check = token == U8 || token == U16 || token == U32 || token == U64 || token == I8 || token == I16 || token == I32 || token == I64 || token == F32 || token == F64 || token == BOOL || token == CHAR || token == STRING || token == GENERIC || token == USER_DEFINED || token == OPTIONAL
 	case S_VALUE:
 		check = token == NUMBER_LITERAL || token == STRING_LITERAL || token == IDENTIFIER || token == TRUE || token == FALSE || token == NONE || token == SELF || token == SUPER
 	case S_OPEN_BRACKET:
@@ -160,7 +159,11 @@ func (s ShapeElement) Matches(token TokenType) bool {
 	case S_CLOSE_BRACKET:
 		check = token == R_BRACKET || token == R_BRACE || token == R_PAREN
 	case S_OPERATOR:
-		check = token == PLUS || token == MINUS || token == MULTIPLY || token == DIVIDE || token == MODULO || token == BITWISE_AND || token == BITWISE_OR || token == BITWISE_XOR || token == BITWISE_NOT || token == BITWISE_LEFT_SHIFT || token == BITWISE_RIGHT_SHIFT || token == EQUAL || token == NOT_EQUAL || token == GREATER_THAN || token == GREATER_THAN_OR_EQUAL || token == LESS_THAN || token == LESS_THAN_OR_EQUAL || token == ADDRESS_OF || token == OPTIONAL
+		check = token == PLUS || token == MINUS || token == MULTIPLY || token == DIVIDE || token == MODULO || token == BITWISE_AND || token == BITWISE_OR || token == BITWISE_XOR || token == BITWISE_NOT || token == BITWISE_LEFT_SHIFT || token == BITWISE_RIGHT_SHIFT || token == EQUAL || token == NOT_EQUAL || token == GREATER_THAN || token == GREATER_THAN_OR_EQUAL || token == LESS_THAN || token == LESS_THAN_OR_EQUAL || token == ADDRESS_OF || token == AND || token == OR || token == NOT
+	case S_UNARY_OPERATOR:
+		check = token == PLUS || token == MINUS || token == BITWISE_NOT || token == ADDRESS_OF || token == NOT
+	case S_BINARY_OPERATOR:
+		check = token == PLUS || token == MINUS || token == MULTIPLY || token == DIVIDE || token == MODULO || token == BITWISE_AND || token == BITWISE_OR || token == BITWISE_XOR || token == BITWISE_NOT || token == BITWISE_LEFT_SHIFT || token == BITWISE_RIGHT_SHIFT || token == EQUAL || token == NOT_EQUAL || token == GREATER_THAN || token == GREATER_THAN_OR_EQUAL || token == LESS_THAN || token == LESS_THAN_OR_EQUAL || token == AND || token == OR
 	case S_ASSIGN_OPERATOR:
 		check = token == COLON_ASSIGN || token == PLUS_ASSIGN || token == MINUS_ASSIGN || token == MULTIPLY_ASSIGN || token == DIVIDE_ASSIGN || token == MODULO_ASSIGN || token == BITWISE_AND_ASSIGN || token == BITWISE_OR_ASSIGN || token == BITWISE_XOR_ASSIGN || token == BITWISE_NOT_ASSIGN || token == BITWISE_LEFT_SHIFT_ASSIGN || token == BITWISE_RIGHT_SHIFT_ASSIGN
 	case S_KEYWORD:
@@ -169,14 +172,10 @@ func (s ShapeElement) Matches(token TokenType) bool {
 		check = true
 	}
 
-	if s.TokenType != _ANY_TOKEN {
-		check = check && s.TokenType == token
-	}
-
 	return check
 }
 
-type Shape []ShapeElement
+type Shape []ShapeType
 
 func Equal(a, b Token) bool {
 	switch a.Type {
@@ -253,7 +252,7 @@ func (tokens TokenList) FindMatchingBracket(index int) (int, error) {
 	case L_PAREN:
 		matchingBracket = R_PAREN
 	default:
-		return -1, errors.New("invalid bracket")
+		return -1, tokens[index].Error("invalid bracket")
 	}
 
 	depth := 1
@@ -267,5 +266,5 @@ func (tokens TokenList) FindMatchingBracket(index int) (int, error) {
 			}
 		}
 	}
-	return -1, errors.New("unmatched bracket")
+	return -1, tokens[index].Error("unmatched bracket")
 }

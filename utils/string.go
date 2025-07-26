@@ -21,6 +21,27 @@ func StringFrom(s string, start int, length int) String {
 	}
 }
 
+func Encompass(strings ...String) String {
+	minStart := 0
+	maxEnd := 0
+	// first make sure they all have the same pointer
+	ptr := strings[0].Ptr
+	for _, s := range strings {
+		if s.Ptr != ptr {
+			panic("all strings must have the same pointer")
+		}
+	}
+	for _, s := range strings {
+		if s.Start < minStart {
+			minStart = s.Start
+		}
+		if s.Start+s.Length > maxEnd {
+			maxEnd = s.Start + s.Length
+		}
+	}
+	return StringFrom(*ptr, minStart, maxEnd-minStart)
+}
+
 func (a String) Equal(b String) bool {
 	return a.Ptr == b.Ptr && a.Start == b.Start && a.Length == b.Length
 }
@@ -29,8 +50,10 @@ func (s String) String() string {
 	return string(*s.Ptr)[s.Start : s.Start+s.Length]
 }
 
-func showPosition(s string, line int, column int) (output string) {
-	lines := strings.Split(s, "\n")
+func (s String) ShowPosition() (output string) {
+	lines := strings.Split(*s.Ptr, "\n")
+
+	line, column := s.GetLineAndColumn()
 
 	if line > 1 {
 		output += "...\n"
@@ -57,4 +80,18 @@ func showPosition(s string, line int, column int) (output string) {
 	}
 
 	return
+}
+
+func (s String) GetLineAndColumn() (int, int) {
+	line := 1
+	column := 1
+	for i := 0; i < s.Start; i++ {
+		if (*s.Ptr)[i] == '\n' {
+			line++
+			column = 1
+		} else {
+			column++
+		}
+	}
+	return line, column
 }

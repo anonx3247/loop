@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"sort"
 
-	"com.loop.anonx3247/src/utils"
+	"com.loop.anonx3247/utils"
 )
 
 var (
@@ -45,11 +45,8 @@ func (l *Lexer) Tokenize() (TokenList, error) {
 			return tokens, err
 		}
 		tokens = append(tokens, token)
-		if token.Type == EOF {
-			return tokens, nil
-		}
 	}
-	return tokens, l.error("unexpected EOF")
+	return tokens, nil
 }
 
 func (l *Lexer) Match(re *regexp.Regexp) (bool, int) {
@@ -65,7 +62,7 @@ func (l *Lexer) Next() (Token, error) {
 	defer func() {
 		l.pos += offset
 	}()
-	if l.pos >= len(l.source)-1 {
+	if l.pos >= len(l.source) {
 		return Token{Type: EOF, Value: utils.String{}}, nil
 	} else {
 
@@ -130,23 +127,8 @@ func (l *Lexer) Next() (Token, error) {
 	}
 }
 
-func (l *Lexer) getLineAndColumn() (int, int) {
-	line := 1
-	column := 1
-	for i := 0; i < l.pos; i++ {
-		if l.source[i] == '\n' {
-			line++
-			column = 1
-		} else {
-			column++
-		}
-	}
-	return line, column
-}
-
 func (l *Lexer) error(message string) utils.Error {
-	line, column := l.getLineAndColumn()
-	return utils.Error{Source: l.source, Message: message, Line: line, Column: column}
+	return utils.Error{Source: l.slice(0), Message: message}
 }
 
 func (l *Lexer) tryTokenizeAtom() (Token, error) {
@@ -196,12 +178,10 @@ func (l *Lexer) tryTokenizeAtom() (Token, error) {
 		{"u16", U16},
 		{"u32", U32},
 		{"u64", U64},
-		{"u128", U128},
 		{"i8", I8},
 		{"i16", I16},
 		{"i32", I32},
 		{"i64", I64},
-		{"i128", I128},
 		{"f32", F32},
 		{"f64", F64},
 		{"bool", BOOL},
