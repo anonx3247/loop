@@ -3,19 +3,20 @@ package ast
 import (
 	"strings"
 
+	"com.loop.anonx3247/env"
 	"com.loop.anonx3247/lexer"
 	"com.loop.anonx3247/utils"
 )
 
 type Literal struct {
-	Value Value
+	Value env.Value
 }
 
 func (l Literal) Source() utils.String {
 	return l.Value.Source()
 }
 
-func (l Literal) Eval() (Value, error) {
+func (l Literal) Eval(env *env.Env) (env.Value, error) {
 	return l.Value, nil
 }
 
@@ -30,26 +31,26 @@ func LiteralFromToken(tok lexer.Token) (Literal, error) {
 	switch tok.Type {
 	case lexer.NUMBER_LITERAL:
 		if strings.Contains(tok.Value.String(), ".") || strings.Contains(tok.Value.String(), "e") {
-			val, err := TryFloatFrom[float32](tok)
+			val, err := env.TryFloatFrom[float32](tok)
 			if err != nil {
 				return Literal{}, err
 			}
 			return Literal{Value: val}, nil
 		} else {
-			val, err := TryIntFrom[int32](tok)
+			val, err := env.TryIntFrom[int32](tok)
 			if err != nil {
 				return Literal{}, err
 			}
 			return Literal{Value: val}, nil
 		}
 	case lexer.STRING_LITERAL:
-		val, err := TryStrFrom(tok)
+		val, err := env.TryStrFrom(tok)
 		if err != nil {
 			return Literal{}, err
 		}
 		return Literal{Value: val}, nil
 	case lexer.TRUE, lexer.FALSE:
-		val, err := TryBoolFrom(tok)
+		val, err := env.TryBoolFrom(tok)
 		if err != nil {
 			return Literal{}, err
 		}
@@ -58,6 +59,6 @@ func LiteralFromToken(tok lexer.Token) (Literal, error) {
 	return Literal{}, tok.Error("invalid literal")
 }
 
-func NewLiteral(value Value) Literal {
+func NewLiteral(value env.Value) Literal {
 	return Literal{Value: value}
 }

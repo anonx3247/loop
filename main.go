@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"com.loop.anonx3247/env"
 	"com.loop.anonx3247/lexer"
 	"com.loop.anonx3247/parser"
 )
@@ -56,6 +57,8 @@ func runREPL() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
+	replEnv := env.NewEnv()
+
 	for {
 		fmt.Print("loop> ")
 
@@ -89,7 +92,7 @@ func runREPL() {
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
-		val, err := program.Eval()
+		val, err := program.Eval(replEnv)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue

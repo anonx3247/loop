@@ -21,7 +21,7 @@ var (
 
 	KEYWORDS   = regexp.MustCompile(`^(if|elif|else|while|for|loop|ret|break|continue|match|comp|type|abs|impl|mod|use|import|as|from|fn|let|mut|in|is|and|or|not|true|false|none|self|super|except|new|del|exit)`)
 	BASE_TYPES = regexp.MustCompile(`^(u8|u16|u32|u64|u128|i8|i16|i32|i64|i128|f32|f64|bool|char|string)`)
-	OPERATORS  = regexp.MustCompile(`^(\(|\)|\{|\}|\[|\]|\:=|\:|\.\.|\+|\+=|-|-=|\*|\*=|/|/=|%|%=|~|~=|&|&=|\||\|=|\^|\^=|#|\.|\,|->|=>|==|!=|>|>=|<|<=)`)
+	OPERATORS  = regexp.MustCompile(`^(\(|\)|\{|\}|\[|\]|\:=|\:|\.\.|\+|\+=|-|-=|\*|\*=|/|/=|%|%=|~|~=|&|&=|\||\|=|\^|\^=|#|\.|\,|->|=>|==|!=|>|>=|<|<=|=)`)
 )
 
 type Lexer struct {
@@ -193,6 +193,7 @@ func (l *Lexer) tryTokenizeAtom() (Token, error) {
 		{"}", R_BRACE},
 		{"[", L_BRACKET},
 		{"]", R_BRACKET},
+		{"=", ASSIGN},
 		{":", COLON},
 		{":=", COLON_ASSIGN},
 		{"..", RANGE},
@@ -210,7 +211,6 @@ func (l *Lexer) tryTokenizeAtom() (Token, error) {
 		{"?=", OPTIONAL_ASSIGN},
 		{"!", ERROR_MARK},
 		{"~", BITWISE_NOT},
-		{"~=", BITWISE_NOT_ASSIGN},
 		{"&", BITWISE_AND},
 		{"&=", BITWISE_AND_ASSIGN},
 		{"|", BITWISE_OR},

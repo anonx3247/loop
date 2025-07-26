@@ -77,6 +77,7 @@ const (
 	L_BRACKET                  // [
 	R_BRACKET                  // ]
 	COLON                      // :
+	ASSIGN                     // =
 	COLON_ASSIGN               // :=
 	RANGE                      // ..
 	PLUS                       // +
@@ -99,7 +100,6 @@ const (
 	BITWISE_XOR                // ^
 	BITWISE_XOR_ASSIGN         // ^=
 	BITWISE_NOT                // ~
-	BITWISE_NOT_ASSIGN         // ~=
 	BITWISE_LEFT_SHIFT         // <<
 	BITWISE_LEFT_SHIFT_ASSIGN  // <<=
 	BITWISE_RIGHT_SHIFT        // >>
@@ -165,7 +165,7 @@ func (s ShapeType) Matches(token TokenType) bool {
 	case S_BINARY_OPERATOR:
 		check = token == PLUS || token == MINUS || token == MULTIPLY || token == DIVIDE || token == MODULO || token == BITWISE_AND || token == BITWISE_OR || token == BITWISE_XOR || token == BITWISE_NOT || token == BITWISE_LEFT_SHIFT || token == BITWISE_RIGHT_SHIFT || token == EQUAL || token == NOT_EQUAL || token == GREATER_THAN || token == GREATER_THAN_OR_EQUAL || token == LESS_THAN || token == LESS_THAN_OR_EQUAL || token == AND || token == OR
 	case S_ASSIGN_OPERATOR:
-		check = token == COLON_ASSIGN || token == PLUS_ASSIGN || token == MINUS_ASSIGN || token == MULTIPLY_ASSIGN || token == DIVIDE_ASSIGN || token == MODULO_ASSIGN || token == BITWISE_AND_ASSIGN || token == BITWISE_OR_ASSIGN || token == BITWISE_XOR_ASSIGN || token == BITWISE_NOT_ASSIGN || token == BITWISE_LEFT_SHIFT_ASSIGN || token == BITWISE_RIGHT_SHIFT_ASSIGN
+		check = token == COLON_ASSIGN || token == PLUS_ASSIGN || token == MINUS_ASSIGN || token == MULTIPLY_ASSIGN || token == DIVIDE_ASSIGN || token == MODULO_ASSIGN || token == BITWISE_AND_ASSIGN || token == BITWISE_OR_ASSIGN || token == BITWISE_XOR_ASSIGN || token == BITWISE_LEFT_SHIFT_ASSIGN || token == BITWISE_RIGHT_SHIFT_ASSIGN || token == ASSIGN
 	case S_KEYWORD:
 		check = token == IF || token == ELIF || token == ELSE || token == WHILE || token == FOR || token == LOOP || token == RET || token == BREAK || token == CONTINUE || token == MATCH || token == COMP || token == TYPE || token == ABS || token == IMPL || token == MOD || token == USE || token == IMPORT || token == AS || token == FN || token == LET || token == MUT || token == IN || token == IS || token == AND || token == OR || token == NOT || token == EXCEPT || token == NEW || token == DEL || token == EXIT
 	default:

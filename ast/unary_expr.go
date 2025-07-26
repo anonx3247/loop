@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"com.loop.anonx3247/env"
 	"com.loop.anonx3247/lexer"
 	"com.loop.anonx3247/utils"
 )
@@ -15,8 +16,8 @@ func (u UnaryExpr) Source() utils.String {
 	return u.source
 }
 
-func (u UnaryExpr) Eval() (Value, error) {
-	val, err := u.Value.Eval()
+func (u UnaryExpr) Eval(env *env.Env) (env.Value, error) {
+	val, err := u.Value.Eval(env)
 	if err != nil {
 		return nil, err
 	}
@@ -35,82 +36,82 @@ func (u UnaryExpr) Eval() (Value, error) {
 
 }
 
-func AddressOf(val Value, source utils.String) (Value, error) {
+func AddressOf(val env.Value, source utils.String) (env.Value, error) {
 	panic("address_of not implemented yet")
 }
 
-func BitwiseNot(val Value, source utils.String) (Value, error) {
+func BitwiseNot(val env.Value, source utils.String) (env.Value, error) {
 	switch val.Type().BaseType() {
-	case I32:
-		if intVal, ok := val.(BaseValue[int32]); ok {
-			return NewI32Value(^intVal.GetValue(), source), nil
+	case env.I32:
+		if intVal, ok := val.(env.BaseValue[int32]); ok {
+			return env.NewI32Value(^intVal.GetValue(), source), nil
 		}
-	case I64:
-		if intVal, ok := val.(BaseValue[int64]); ok {
-			return NewI64Value(^intVal.GetValue(), source), nil
+	case env.I64:
+		if intVal, ok := val.(env.BaseValue[int64]); ok {
+			return env.NewI64Value(^intVal.GetValue(), source), nil
 		}
-	case I16:
-		if intVal, ok := val.(BaseValue[int16]); ok {
-			return NewI16Value(^intVal.GetValue(), source), nil
+	case env.I16:
+		if intVal, ok := val.(env.BaseValue[int16]); ok {
+			return env.NewI16Value(^intVal.GetValue(), source), nil
 		}
-	case I8:
-		if intVal, ok := val.(BaseValue[int8]); ok {
-			return NewI8Value(^intVal.GetValue(), source), nil
+	case env.I8:
+		if intVal, ok := val.(env.BaseValue[int8]); ok {
+			return env.NewI8Value(^intVal.GetValue(), source), nil
 		}
-	case U32:
-		if intVal, ok := val.(BaseValue[uint32]); ok {
-			return NewU32Value(^intVal.GetValue(), source), nil
+	case env.U32:
+		if intVal, ok := val.(env.BaseValue[uint32]); ok {
+			return env.NewU32Value(^intVal.GetValue(), source), nil
 		}
-	case U64:
-		if intVal, ok := val.(BaseValue[uint64]); ok {
-			return NewU64Value(^intVal.GetValue(), source), nil
+	case env.U64:
+		if intVal, ok := val.(env.BaseValue[uint64]); ok {
+			return env.NewU64Value(^intVal.GetValue(), source), nil
 		}
-	case U16:
-		if intVal, ok := val.(BaseValue[uint16]); ok {
-			return NewU16Value(^intVal.GetValue(), source), nil
+	case env.U16:
+		if intVal, ok := val.(env.BaseValue[uint16]); ok {
+			return env.NewU16Value(^intVal.GetValue(), source), nil
 		}
-	case U8:
-		if intVal, ok := val.(BaseValue[uint8]); ok {
-			return NewU8Value(^intVal.GetValue(), source), nil
+	case env.U8:
+		if intVal, ok := val.(env.BaseValue[uint8]); ok {
+			return env.NewU8Value(^intVal.GetValue(), source), nil
 		}
 	}
 	return nil, utils.Error{Source: source, Message: "unsupported types for bitwise not"}
 }
 
-func Not(val Value, source utils.String) (Value, error) {
-	if val.Type().BaseType() == Bool {
-		if boolVal, ok := val.(BaseValue[bool]); ok {
-			return NewBoolValue(!boolVal.GetValue(), source), nil
+func Not(val env.Value, source utils.String) (env.Value, error) {
+	if val.Type().BaseType() == env.Bool {
+		if boolVal, ok := val.(env.BaseValue[bool]); ok {
+			return env.NewBoolValue(!boolVal.GetValue(), source), nil
 		}
 	}
 	return nil, utils.Error{Source: source, Message: "unsupported types for not"}
 }
 
-func Minus(val Value, source utils.String) (Value, error) {
+func Minus(val env.Value, source utils.String) (env.Value, error) {
 	switch val.Type().BaseType() {
-	case I8:
-		if intVal, ok := val.(BaseValue[int8]); ok {
-			return NewI8Value(-intVal.GetValue(), source), nil
+	case env.I8:
+		if intVal, ok := val.(env.BaseValue[int8]); ok {
+			return env.NewI8Value(-intVal.GetValue(), source), nil
 		}
-	case I16:
-		if intVal, ok := val.(BaseValue[int16]); ok {
-			return NewI16Value(-intVal.GetValue(), source), nil
+	case env.I16:
+		if intVal, ok := val.(env.BaseValue[int16]); ok {
+			return env.NewI16Value(-intVal.GetValue(), source), nil
 		}
-	case I32:
-		if intVal, ok := val.(BaseValue[int32]); ok {
-			return NewI32Value(-intVal.GetValue(), source), nil
+	case env.I32:
+		if intVal, ok := val.(env.BaseValue[int32]); ok {
+			return env.NewI32Value(-intVal.GetValue(), source), nil
 		}
-	case I64:
-		if intVal, ok := val.(BaseValue[int64]); ok {
-			return NewI64Value(-intVal.GetValue(), source), nil
+	case env.I64:
+		if intVal, ok := val.(env.BaseValue[int64]); ok {
+			return env.NewI64Value(-intVal.GetValue(), source), nil
 		}
-	case F32:
-		if floatVal, ok := val.(BaseValue[float32]); ok {
-			return NewF32Value(-floatVal.GetValue(), source), nil
+	case env.F32:
+		if floatVal, ok := val.(env.BaseValue[float32]); ok {
+			return env.NewF32Value(-floatVal.GetValue(), source), nil
 		}
-	case F64:
-		if floatVal, ok := val.(BaseValue[float64]); ok {
-			return NewF64Value(-floatVal.GetValue(), source), nil
+	case env.F64:
+		if floatVal, ok := val.(env.BaseValue[float64]); ok {
+			return env.NewF64Value(-floatVal.GetValue(), source), nil
 		}
 	}
 	return nil, utils.Error{Source: source, Message: "unsupported types for minus"}

@@ -1,4 +1,4 @@
-package ast
+package env
 
 import (
 	"fmt"
@@ -64,6 +64,10 @@ func ToBaseType[T int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint6
 type BaseValue[T int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 | float32 | float64 | string | bool] struct {
 	source utils.String
 	value  T
+}
+
+func NewBaseValue[T int8 | int16 | int32 | int64 | uint8 | uint16 | uint32 | uint64 | float32 | float64 | string | bool](value T, source utils.String) BaseValue[T] {
+	return BaseValue[T]{value: value, source: source}
 }
 
 func (bv BaseValue[T]) BaseType() BaseType {

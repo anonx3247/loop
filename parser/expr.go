@@ -59,6 +59,20 @@ func (p *Parser) parseAtom() (ast.Expr, error) {
 		}
 		return ast.ParenExpr{Expr: expr}, nil
 	} else if lexer.S_VALUE.Matches(leftToken.Type) {
+		if leftToken.Type == lexer.IDENTIFIER {
+			next, err := p.Peek()
+			if err == nil {
+				if lexer.S_ASSIGN_OPERATOR.Matches(next.Type) {
+					p.Consume()
+					expr, err := p.ParseExpr()
+					if err != nil {
+						return nil, err
+					}
+					return ast.NewAssignmentExpr(leftToken, next, expr), nil
+				}
+			}
+			return ast.NewIdentifier(leftToken.Value), nil
+		}
 		lit, err := ast.LiteralFromToken(leftToken)
 		if err != nil {
 			return nil, err

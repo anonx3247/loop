@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"com.loop.anonx3247/env"
+	envv "com.loop.anonx3247/env"
 	"com.loop.anonx3247/utils"
 )
 
@@ -10,8 +12,8 @@ type ConditionalExpr struct {
 	Next      *ConditionalExpr
 }
 
-func (c ConditionalExpr) Eval() (Value, error) {
-	condition, err := c.Condition.Eval()
+func (c ConditionalExpr) Eval(env *envv.Env) (envv.Value, error) {
+	condition, err := c.Condition.Eval(env)
 	if err != nil {
 		return nil, err
 	}
@@ -20,12 +22,12 @@ func (c ConditionalExpr) Eval() (Value, error) {
 		return nil, utils.Error{Source: condition.Source(), Message: "condition is not a boolean"}
 	}
 
-	conditionValue := condition.(BaseValue[bool])
+	conditionValue := condition.(envv.BaseValue[bool])
 
 	if conditionValue.GetValue() {
-		return c.Content.Eval()
+		return c.Content.Eval(env)
 	} else if c.Next != nil {
-		return c.Next.Eval()
+		return c.Next.Eval(env)
 	}
 	return nil, nil
 }
@@ -39,7 +41,7 @@ func (c ConditionalExpr) Source() utils.String {
 
 func NewElseExpr(content Scope, source utils.String) ConditionalExpr {
 	return ConditionalExpr{
-		Condition: NewLiteral(NewBoolValue(true, source)),
+		Condition: NewLiteral(env.NewBoolValue(true, source)),
 		Content:   content,
 		Next:      nil,
 	}

@@ -1,23 +1,13 @@
 package ast
 
 import (
+	"com.loop.anonx3247/env"
 	"com.loop.anonx3247/utils"
 )
 
 type Expr interface {
 	Source() utils.String
-	Eval() (Value, error)
-}
-type Value interface {
-	Type() Type
-	Source() utils.String
-	IsBase() bool
-	String() string
-}
-
-type Type interface {
-	BaseType() BaseType
-	// TupleType, FunctionType, etc.
+	Eval(env *env.Env) (env.Value, error)
 }
 
 type ParenExpr struct {
@@ -28,20 +18,20 @@ func (p ParenExpr) Source() utils.String {
 	return p.Expr.Source()
 }
 
-func (p ParenExpr) Eval() (Value, error) {
-	return p.Expr.Eval()
+func (p ParenExpr) Eval(env *env.Env) (env.Value, error) {
+	return p.Expr.Eval(env)
 }
 
 type Scope struct {
 	Exprs []Expr
 }
 
-func (s *Scope) Eval() (Value, error) {
+func (s *Scope) Eval(env *env.Env) (env.Value, error) {
 	for i, expr := range s.Exprs {
 		if i == len(s.Exprs)-1 {
-			return expr.Eval()
+			return expr.Eval(env)
 		}
-		_, err := expr.Eval()
+		_, err := expr.Eval(env)
 		if err != nil {
 			return nil, err
 		}
